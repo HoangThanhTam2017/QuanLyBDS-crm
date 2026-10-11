@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <script>
+    (function () {
+      var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+      var user = null;
+      try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+      var role = user ? String(user.role || "").trim().toLowerCase() : "";
+      var title = user ? String(user.chuc_vu || "").trim().toLowerCase() : "";
+      if (label === "admin" || role === "admin" || title === "admin") return;
+      window.location.replace("dashboard.html");
+    })();
+  </script>
+  <title>Quản lý nhân viên · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <header id="topbar">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+      <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+        <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+        <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+        <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+      </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </a>
+      <div id="userInfoWrapper">
+        <div id="topbarUserName">Đang tải...</div>
+        <div id="topbarUserEmail"></div>
+      </div>
+      <button id="btnLogout" class="logout-btn" type="button">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span class="logout-label">Đăng xuất</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="backdrop"></div>
+
+  <div id="shell" class="d-flex">
+    <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+      <nav class="sidebar-nav" aria-label="Menu chính">
+        <p class="nav-section">Phân hệ</p>
+        <button type="button" class="nav-link" data-go="dashboard" data-label="Tổng quan">
+          <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+          <span class="nav-label">Tổng quan</span>
+        </button>
+        <a class="nav-link no-underline" href="properties.html" data-go="supply" data-label="Nguồn cung">
+          <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+          <span class="nav-label">Nguồn cung</span>
+        </a>
+        <a id="navPendingPosts" class="nav-link no-underline" href="pending-posts.html" data-go="pending" data-label="Bài chờ duyệt">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+          <span class="nav-label">Bài chờ duyệt</span>
+        </a>
+        <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+          <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          <span class="nav-label">Tra cứu giá đất</span>
+        </a>
+        <a id="navManageUsers" class="nav-link is-active no-underline" href="users.html" data-go="staff" data-label="Quản lý nhân viên" aria-current="page">
+          <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+          <span class="nav-label">Quản lý nhân viên</span>
+        </a>
+        <a class="nav-link no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh">
+          <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+          <span class="nav-label">Hợp đồng Kinh doanh</span>
+        </a>
+        <a class="nav-link no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê">
+          <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+          <span class="nav-label">Báo cáo Thống kê</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+    </aside>
+    <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+    <div id="main-content">
+      <nav aria-label="Đường dẫn" class="sticky top-16 z-30 -mx-4 -mt-6 mb-4 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:-mx-6 sm:-mt-7 lg:-mx-8 lg:-mt-8">
+        <ol class="flex items-center gap-2">
+          <li>
+            <a href="dashboard.html" data-go="dashboard" class="inline-flex items-center gap-1.5 transition hover:text-[#155cc0]">
+              <i class="fa-solid fa-home" aria-hidden="true"></i>
+              <span>Tổng quan</span>
+            </a>
+          </li>
+          <li class="text-[10px] text-gray-400" aria-hidden="true">
+            <i class="fa-solid fa-chevron-right"></i>
+          </li>
+          <li class="font-medium text-gray-800" aria-current="page">Quản lý nhân viên</li>
+        </ol>
+      </nav>
+
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Quản lý nhân viên</h1>
+          <p class="mt-1 text-sm text-gray-500">Thêm, sửa, phân quyền và đặt lại mật khẩu tài khoản nội bộ.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="user-status-filter" class="text-sm font-medium text-gray-500">Hiển thị</label>
+          <select id="user-status-filter" class="form-select form-select-sm w-auto">
+            <option value="active" selected>Đang hoạt động</option>
+            <option value="locked">Đã khóa</option>
+            <option value="all">Tất cả</option>
+          </select>
+          <button type="button" id="open-add-user" class="btn btn-primary">
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+            Thêm nhân viên
+          </button>
+        </div>
+      </div>
+
+      <p id="users-loading" class="rounded-lg bg-white p-8 text-center text-sm text-gray-500 shadow-sm">Đang tải danh sách nhân viên...</p>
+      <p id="users-empty" class="is-hidden rounded-lg bg-white p-8 text-center text-sm text-gray-500 shadow-sm">Chưa có nhân viên.</p>
+      <p id="users-error" class="is-hidden rounded-lg bg-white p-8 text-center text-sm text-red-600 shadow-sm">Không tải được danh sách nhân viên.</p>
+
+      <div id="users-table-wrap" class="is-hidden overflow-x-auto rounded-lg bg-white shadow-sm ring-1 ring-black/5">
+        <table class="data w-full text-left text-sm">
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Họ tên</th>
+              <th>Nhóm</th>
+              <th>Tài khoản / Email</th>
+              <th>Quyền</th>
+              <th>Chức vụ</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body"></tbody>
+        </table>
+      </div>
+      <span class="hidden inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#155cc0] hover:bg-[#155cc0]/10 text-amber-600 hover:bg-amber-50 text-red-600 hover:bg-red-50 gap-1 font-semibold text-gray-900 disabled:cursor-not-allowed disabled:opacity-40" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <style>
+    @media (min-width: 768px) {
+      #user-add-modal .modal-dialog.modal-lg,
+      #user-edit-modal .modal-dialog.modal-lg {
+        width: 100%;
+        max-width: 800px;
+      }
+    }
+    #user-add-form .form-control,
+    #user-add-form .form-select,
+    #user-edit-form .form-control,
+    #user-edit-form .form-select {
+      width: 100%;
+      background-color: #fff;
+    }
+  </style>
+  <div id="user-add-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="user-add-title">
+    <button type="button" id="user-add-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="modal-dialog modal-lg relative w-full">
+      <div class="modal-content overflow-hidden rounded-lg border-0 bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="user-add-title" class="text-lg font-bold text-gray-900">Thêm nhân viên</h2>
+        <button type="button" id="close-add-user" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form id="user-add-form" class="p-4">
+        <div class="row mb-3 align-items-center">
+          <label for="add-full-name" class="col-md-4 col-lg-3 col-form-label fw-bold">Họ tên <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="add-full-name" name="full_name" required maxlength="255" autocomplete="off" placeholder="Nhập họ và tên">
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-email" class="col-md-4 col-lg-3 col-form-label fw-bold">Tài khoản / Email <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <input type="email" class="form-control" id="add-email" name="email" required maxlength="255" autocomplete="off" placeholder="ten@thanhtam.vn">
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-password" class="col-md-4 col-lg-3 col-form-label fw-bold">Mật khẩu <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <input type="password" class="form-control" id="add-password" name="password" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập mật khẩu">
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-role" class="col-md-4 col-lg-3 col-form-label fw-bold">Quyền <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <select id="add-role" name="role" class="form-select" required>
+              <option value="User" selected>User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-chuc-vu" class="col-md-4 col-lg-3 col-form-label fw-bold">Chức vụ</label>
+          <div class="col-md-8 col-lg-9">
+            <select class="form-select" id="add-chuc-vu" name="chuc_vu">
+              <option value="">-- Chọn chức vụ --</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-trang-thai" class="col-md-4 col-lg-3 col-form-label fw-bold">Trạng thái</label>
+          <div class="col-md-8 col-lg-9">
+            <select class="form-select" id="add-trang-thai" name="trang_thai">
+              <option value="Đang làm" selected>Đang làm</option>
+              <option value="Nghỉ việc">Nghỉ việc</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="add-nhom" class="col-md-4 col-lg-3 col-form-label fw-bold">Nhóm</label>
+          <div class="col-md-8 col-lg-9">
+            <select id="add-nhom" name="nhom" class="form-select">
+              <option value="">-- Chọn nhóm --</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="cancel-add-user" class="btn btn-secondary">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu nhân viên</button>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="user-edit-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="user-edit-title">
+    <button type="button" id="user-edit-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="modal-dialog modal-lg relative w-full">
+      <div class="modal-content overflow-hidden rounded-lg border-0 bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="user-edit-title" class="text-lg font-bold text-gray-900">Sửa nhân viên</h2>
+        <button type="button" id="close-edit-user" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form id="user-edit-form" class="p-4">
+        <div class="row mb-3 align-items-center">
+          <label for="edit-full-name" class="col-md-4 col-lg-3 col-form-label fw-bold">Họ tên <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="edit-full-name" name="full_name" required maxlength="255" autocomplete="off" placeholder="Nhập họ và tên">
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="edit-email" class="col-md-4 col-lg-3 col-form-label fw-bold">Tài khoản / Email <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <input type="email" class="form-control" id="edit-email" name="email" required maxlength="255" autocomplete="off" placeholder="ten@thanhtam.vn">
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="edit-role" class="col-md-4 col-lg-3 col-form-label fw-bold">Quyền <span class="text-danger">*</span></label>
+          <div class="col-md-8 col-lg-9">
+            <select id="edit-role" name="role" class="form-select" required>
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="edit-chuc-vu" class="col-md-4 col-lg-3 col-form-label fw-bold">Chức vụ</label>
+          <div class="col-md-8 col-lg-9">
+            <select class="form-select" id="edit-chuc-vu" name="chuc_vu">
+              <option value="">-- Chọn chức vụ --</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="edit-trang-thai" class="col-md-4 col-lg-3 col-form-label fw-bold">Trạng thái</label>
+          <div class="col-md-8 col-lg-9">
+            <select class="form-select" id="edit-trang-thai" name="trang_thai">
+              <option value="Đang làm">Đang làm</option>
+              <option value="Nghỉ việc">Nghỉ việc</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+          <label for="edit-nhom" class="col-md-4 col-lg-3 col-form-label fw-bold">Nhóm</label>
+          <div class="col-md-8 col-lg-9">
+            <select id="edit-nhom" name="nhom" class="form-select">
+              <option value="">-- Chọn nhóm --</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="cancel-edit-user" class="btn btn-secondary">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script>
+    (function () {
+      document.getElementById("btnLogout").addEventListener("click", function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        window.location.replace("index.html");
+      });
+
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

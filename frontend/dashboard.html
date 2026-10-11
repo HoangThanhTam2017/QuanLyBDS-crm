@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <meta name="description" content="Trang chủ hệ thống quản lý bất động sản nội bộ của Công ty cổ phần Thành Tâm Hà Tĩnh">
+  <title>Tổng quan · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <script src="assets/js/auth.js?v=admin-only"></script>
+  <style>
+    html { scrollbar-gutter: stable; }
+  </style>
+</head>
+<body data-page="dashboard">
+
+    <header id="topbar">
+      <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+          <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+          <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+        </button>
+        <div class="min-w-0">
+          <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+          <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+        </div>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+          <i class="fas fa-cog" aria-hidden="true"></i>
+        </a>
+        <div id="userInfoWrapper">
+          <div id="topbarUserName">Đang tải...</div>
+          <div id="topbarUserEmail"></div>
+        </div>
+        <button id="btnLogout" class="logout-btn" type="button">
+          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+          <span class="logout-label">Đăng xuất</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="backdrop"></div>
+
+    <div id="shell" class="d-flex">
+      <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+        <nav class="sidebar-nav" aria-label="Menu chính">
+          <p class="nav-section">Phân hệ</p>
+          <button type="button" class="nav-link is-active" data-go="dashboard" data-label="Tổng quan" aria-current="page">
+            <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+            <span class="nav-label">Tổng quan</span>
+          </button>
+          <button type="button" class="nav-link" data-go="supply" data-label="Nguồn cung">
+            <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+            <span class="nav-label">Nguồn cung</span>
+          </button>
+          <a id="navPendingPosts" class="nav-link no-underline" href="javascript:void(0)" data-go="pending" data-label="Bài chờ duyệt">
+            <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+            <span class="nav-label">Bài chờ duyệt</span>
+          </a>
+          <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+            <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+            <span class="nav-label">Tra cứu giá đất</span>
+          </a>
+          <a id="navManageUsers" class="nav-link no-underline" href="javascript:void(0)" data-go="staff" data-label="Quản lý nhân viên">
+            <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+            <span class="nav-label">Quản lý nhân viên</span>
+          </a>
+          <a class="nav-link no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh">
+            <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+            <span class="nav-label">Hợp đồng Kinh doanh</span>
+          </a>
+          <a class="nav-link no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê">
+            <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+            <span class="nav-label">Báo cáo Thống kê</span>
+          </a>
+        </nav>
+        <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+      </aside>
+      <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+      <span class="hidden h-48 h-96 mt-3 rounded-lg bg-gray-100 grid h-full gap-1 grid-cols-1 grid-cols-2 grid-rows-2 row-span-2 min-h-0 object-cover object-contain bg-black relative z-10 pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-bold text-white line-clamp-2 overflow-hidden top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 cursor-pointer hover:bg-red-600 opacity-80 hover:opacity-100" aria-hidden="true"></span>
+      <div id="main-content" tabindex="-1">
+        <div class="main-inner">
+          <section data-page="dashboard">
+            <p id="today" class="text-sm font-semibold text-[#155cc0]"></p>
+            <h1 class="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Xin chào, <span id="welcome-name">bạn</span></h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500 sm:text-base">Chọn một phân hệ để bắt đầu công việc trong ngày.</p>
+
+            <section id="profile-card" class="mt-8 max-w-xl rounded-lg bg-white p-4 shadow-sm ring-1 ring-black/5 is-hidden" aria-labelledby="profile-title">
+              <h2 id="profile-title" class="text-base font-bold text-gray-900">Hồ sơ cá nhân</h2>
+              <p class="mt-1 text-sm text-gray-500">Số điện thoại này được gắn vào bài đăng khi chuẩn bị đăng bài.</p>
+              <form id="profile-form" class="mt-4 space-y-3">
+                <div>
+                  <label class="label" for="profile-name">Họ tên</label>
+                  <input id="profile-name" class="input" type="text" readonly>
+                </div>
+                <div>
+                  <label class="label" for="profile-phone">Số điện thoại</label>
+                  <input id="profile-phone" class="input" type="tel" maxlength="20" placeholder="0912 345 678" autocomplete="tel">
+                </div>
+                <button type="submit" class="btn btn-primary">Lưu số điện thoại</button>
+              </form>
+            </section>
+
+            <style>
+              #module-grid {
+                --bs-primary: #8e0b2c;
+                --bs-primary-rgb: 142, 11, 44;
+              }
+              #module-grid .module-card.card {
+                height: 100%;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 1rem;
+                background: #fff;
+                color: inherit;
+                text-align: left;
+              }
+              #module-grid .module-card.card:hover { border-color: #155cc0 !important; }
+              #module-grid .card-body { min-height: 100%; }
+              #module-grid .card-title {
+                min-width: 0;
+                font-size: 1.05rem;
+                font-weight: 700;
+                line-height: 1.3;
+                color: #111827;
+              }
+              #module-grid .pending-label { min-width: 0; }
+              #module-grid #pendingCountLoading { flex: 0 0 auto; }
+              #module-grid .badge { font-weight: 700; }
+            </style>
+            <div id="module-grid" class="row g-4 mt-8">
+              <div class="col-6 col-lg-4">
+                <button type="button" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" data-go="supply">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-building fs-4 text-primary me-3" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0">Nguồn cung</h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Theo dõi quỹ đất, nhà ở và căn hộ đang khai thác trong danh mục công ty.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="col-6 col-lg-4" id="cardPendingPosts">
+                <a href="pending-posts.html" data-go="pending" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left no-underline transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-file-signature fs-4 text-primary me-2" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0 d-flex align-items-center">
+                        <span class="pending-label">Bài chờ duyệt</span>
+                        <span class="badge bg-danger ms-2 rounded-pill fs-6" id="pendingCountLoading">...</span>
+                      </h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Các bài đăng đang chờ quản trị viên xem và phê duyệt.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </a>
+              </div>
+
+              <div class="col-6 col-lg-4">
+                <button type="button" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" data-go="price">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-map-location-dot fs-4 text-primary me-3" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0">Tra cứu giá đất</h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Xem đơn giá theo khu vực, tuyến đường và vị trí để phục vụ tư vấn.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="col-6 col-lg-4" id="cardManageUsers">
+                <button type="button" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" data-go="staff">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-users fs-4 text-primary me-3" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0">Quản lý nhân viên</h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Tra cứu hồ sơ nhân sự, phòng ban và tình trạng làm việc hiện tại.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="col-6 col-lg-4">
+                <button type="button" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" data-go="contracts">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-file-contract fs-4 text-primary me-3" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0">Hợp đồng Kinh doanh</h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Theo dõi hợp đồng mua bán, cho thuê và tiến độ xử lý hồ sơ.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="col-6 col-lg-4">
+                <button type="button" class="card module-card group h-100 w-100 shadow-sm border-0 rounded-2xl bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" data-go="reports">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="fa-solid fa-chart-bar fs-4 text-primary me-3" aria-hidden="true"></i>
+                      <h5 class="card-title mb-0">Báo cáo Thống kê</h5>
+                    </div>
+                    <span class="text-sm leading-relaxed text-gray-500">Xem doanh thu, tỷ lệ hợp đồng và bảng xếp hạng thi đua theo năm, tháng.</span>
+                    <span class="module-go mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#8e0b2c] transition-colors duration-300 group-hover:text-[#155cc0]">
+                      Vào phân hệ
+                      <i class="fa-solid fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section data-page="supply" class="is-hidden">
+            <nav class="mb-3 flex items-center gap-2 text-sm text-gray-500" aria-label="Đường dẫn">
+              <button type="button" class="crumb font-medium hover:text-[#155cc0]" data-go="dashboard">Tổng quan</button>
+              <i class="fa-solid fa-chevron-right text-[10px] text-gray-300" aria-hidden="true"></i>
+              <span class="font-medium text-gray-800">Nguồn cung</span>
+            </nav>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Nguồn cung</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500 sm:text-base">Danh mục quỹ đất và sản phẩm đang khai thác. Số liệu dưới đây là dữ liệu minh họa.</p>
+
+            <div class="mt-6 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div class="field sm:max-w-xs">
+                <i class="fa-solid fa-magnifying-glass field-icon" aria-hidden="true"></i>
+                <input id="supply-search" class="input input-icon" type="search" placeholder="Tìm mã, địa chỉ, loại hình" autocomplete="off">
+              </div>
+              <div id="supply-chips" class="flex flex-wrap gap-2">
+                <button type="button" class="chip is-on" data-filter="all">Tất cả</button>
+                <button type="button" class="chip" data-filter="Đất nền">Đất nền</button>
+                <button type="button" class="chip" data-filter="Đất thổ cư">Đất thổ cư</button>
+                <button type="button" class="chip" data-filter="Nhà phố">Nhà phố</button>
+                <button type="button" class="chip" data-filter="Căn hộ">Căn hộ</button>
+                <button type="button" class="chip" data-filter="Biệt thự">Biệt thự</button>
+              </div>
+            </div>
+            <p id="supply-count" class="mb-3 mt-4 text-sm text-gray-500"></p>
+            <div class="table-wrap">
+              <table id="supply-table" class="data">
+                <caption class="sr-only">Danh sách nguồn cung minh họa</caption>
+                <thead>
+                  <tr>
+                    <th>Mã</th>
+                    <th>Loại</th>
+                    <th>Địa chỉ</th>
+                    <th class="num">Diện tích</th>
+                    <th class="num">Giá chào</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-type="Đất nền">
+                    <td class="font-semibold text-gray-900">NC-2401</td>
+                    <td>Đất nền</td>
+                    <td>KĐT Đại Nài, TP. Hà Tĩnh</td>
+                    <td class="num">150 m²</td>
+                    <td class="num">2,35 tỷ</td>
+                    <td><span class="badge badge-info">Đang chào</span></td>
+                  </tr>
+                  <tr data-type="Nhà phố">
+                    <td class="font-semibold text-gray-900">NC-2408</td>
+                    <td>Nhà phố</td>
+                    <td>128 Trần Phú, TP. Hà Tĩnh</td>
+                    <td class="num">90 m²</td>
+                    <td class="num">4,10 tỷ</td>
+                    <td><span class="badge badge-warn">Giữ chỗ</span></td>
+                  </tr>
+                  <tr data-type="Căn hộ">
+                    <td class="font-semibold text-gray-900">NC-2415</td>
+                    <td>Căn hộ</td>
+                    <td>Chung cư Thành Tâm, Hà Huy Tập</td>
+                    <td class="num">72 m²</td>
+                    <td class="num">1,68 tỷ</td>
+                    <td><span class="badge badge-info">Đang chào</span></td>
+                  </tr>
+                  <tr data-type="Đất thổ cư">
+                    <td class="font-semibold text-gray-900">NC-2422</td>
+                    <td>Đất thổ cư</td>
+                    <td>Thị trấn Nghèn, Can Lộc</td>
+                    <td class="num">210 m²</td>
+                    <td class="num">1,92 tỷ</td>
+                    <td><span class="badge badge-info">Đang chào</span></td>
+                  </tr>
+                  <tr data-type="Biệt thự">
+                    <td class="font-semibold text-gray-900">NC-2430</td>
+                    <td>Biệt thự</td>
+                    <td>KĐT phía Bắc, TP. Hà Tĩnh</td>
+                    <td class="num">280 m²</td>
+                    <td class="num">9,40 tỷ</td>
+                    <td><span class="badge badge-ok">Đã giao dịch</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="supply-empty" class="empty-state is-hidden">
+                <p class="font-semibold text-gray-800">Không có nguồn cung phù hợp</p>
+                <p class="mt-1 text-sm text-gray-500">Thử từ khóa hoặc loại hình khác.</p>
+              </div>
+            </div>
+          </section>
+
+          <section data-page="staff" class="is-hidden">
+            <nav class="mb-3 flex items-center gap-2 text-sm text-gray-500" aria-label="Đường dẫn">
+              <button type="button" class="crumb font-medium hover:text-[#155cc0]" data-go="dashboard">Tổng quan</button>
+              <i class="fa-solid fa-chevron-right text-[10px] text-gray-300" aria-hidden="true"></i>
+              <span class="font-medium text-gray-800">Danh sách nhân viên</span>
+            </nav>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Danh sách nhân viên</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500 sm:text-base">Hồ sơ nhân sự nội bộ. Danh sách minh họa cho giao diện.</p>
+
+            <div class="mt-6 max-w-md">
+              <label class="label" for="staff-search">Tìm nhân viên</label>
+              <div class="field">
+                <i class="fa-solid fa-magnifying-glass field-icon" aria-hidden="true"></i>
+                <input id="staff-search" class="input input-icon" type="search" placeholder="Tên, phòng ban, chức vụ" autocomplete="off">
+              </div>
+            </div>
+            <p id="staff-count" class="mb-3 mt-4 text-sm text-gray-500"></p>
+            <div id="staff-list" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">NT</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Nguyễn Minh Tuấn</p>
+                      <span class="badge badge-ok">Đang làm</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Trưởng phòng · Kinh doanh</p>
+                    <a href="tel:0912345678" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0912 345 678
+                    </a>
+                  </div>
+                </div>
+              </article>
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">TH</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Trần Thị Hương</p>
+                      <span class="badge badge-ok">Đang làm</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Chuyên viên · Pháp chế</p>
+                    <a href="tel:0988221034" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0988 221 034
+                    </a>
+                  </div>
+                </div>
+              </article>
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">LN</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Lê Hoàng Nam</p>
+                      <span class="badge badge-ok">Đang làm</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Chuyên viên · Nguồn cung</p>
+                    <a href="tel:0905778216" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0905 778 216
+                    </a>
+                  </div>
+                </div>
+              </article>
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">PH</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Phạm Thu Hà</p>
+                      <span class="badge badge-warn">Nghỉ phép</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Kế toán viên · Kế toán</p>
+                    <a href="tel:0936410552" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0936 410 552
+                    </a>
+                  </div>
+                </div>
+              </article>
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">ĐH</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Đỗ Quang Huy</p>
+                      <span class="badge badge-ok">Đang làm</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Nhân viên · Kinh doanh</p>
+                    <a href="tel:0977163840" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0977 163 840
+                    </a>
+                  </div>
+                </div>
+              </article>
+              <article class="staff-card rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c]/10 text-sm font-bold text-[#8e0b2c]">HL</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900">Hoàng Thị Lan</p>
+                      <span class="badge badge-ok">Đang làm</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Chuyên viên · Hành chính</p>
+                    <a href="tel:0914662309" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#155cc0] hover:underline">
+                      <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>0914 662 309
+                    </a>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div id="staff-empty" class="empty-state mt-4 rounded-2xl border border-dashed border-gray-200 bg-white is-hidden">
+              <p class="font-semibold text-gray-800">Không tìm thấy nhân viên</p>
+              <p class="mt-1 text-sm text-gray-500">Thử tên hoặc phòng ban khác.</p>
+            </div>
+          </section>
+
+          <section data-page="contracts" class="is-hidden">
+            <nav class="mb-3 flex items-center gap-2 text-sm text-gray-500" aria-label="Đường dẫn">
+              <button type="button" class="crumb font-medium hover:text-[#155cc0]" data-go="dashboard">Tổng quan</button>
+              <i class="fa-solid fa-chevron-right text-[10px] text-gray-300" aria-hidden="true"></i>
+              <span class="font-medium text-gray-800">Hợp đồng Kinh doanh</span>
+            </nav>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Hợp đồng Kinh doanh</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500 sm:text-base">Hợp đồng mua bán, chuyển nhượng và cho thuê. Danh sách minh họa.</p>
+
+            <div class="mt-6 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div class="field sm:max-w-xs">
+                <i class="fa-solid fa-magnifying-glass field-icon" aria-hidden="true"></i>
+                <input id="contract-search" class="input input-icon" type="search" placeholder="Số hợp đồng, khách hàng" autocomplete="off">
+              </div>
+              <div id="contract-chips" class="flex flex-wrap gap-2">
+                <button type="button" class="chip is-on" data-filter="all">Tất cả</button>
+                <button type="button" class="chip" data-filter="Đang thực hiện">Đang thực hiện</button>
+                <button type="button" class="chip" data-filter="Hiệu lực">Hiệu lực</button>
+                <button type="button" class="chip" data-filter="Chờ duyệt">Chờ duyệt</button>
+                <button type="button" class="chip" data-filter="Hoàn tất">Hoàn tất</button>
+              </div>
+            </div>
+            <p id="contract-count" class="mb-3 mt-4 text-sm text-gray-500"></p>
+            <div class="table-wrap">
+              <table id="contract-table" class="data">
+                <caption class="sr-only">Danh sách hợp đồng kinh doanh minh họa</caption>
+                <thead>
+                  <tr>
+                    <th>Số hợp đồng</th>
+                    <th>Khách hàng</th>
+                    <th>Nội dung</th>
+                    <th class="num">Giá trị</th>
+                    <th>Ngày ký</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-type="Đang thực hiện">
+                    <td class="font-semibold text-gray-900">HĐ-2026-014</td>
+                    <td>Ông Nguyễn Văn Bình</td>
+                    <td>Chuyển nhượng đất nền Đại Nài</td>
+                    <td class="num">2,35 tỷ</td>
+                    <td>12/03/2026</td>
+                    <td><span class="badge badge-info">Đang thực hiện</span></td>
+                  </tr>
+                  <tr data-type="Hiệu lực">
+                    <td class="font-semibold text-gray-900">HĐ-2026-019</td>
+                    <td>Bà Lê Thị Mai</td>
+                    <td>Thuê căn hộ Thành Tâm</td>
+                    <td class="num">12 triệu/tháng</td>
+                    <td>02/04/2026</td>
+                    <td><span class="badge badge-ok">Hiệu lực</span></td>
+                  </tr>
+                  <tr data-type="Chờ duyệt">
+                    <td class="font-semibold text-gray-900">HĐ-2026-023</td>
+                    <td>Công ty TNHH Hà Thành</td>
+                    <td>Mua nhà phố Trần Phú</td>
+                    <td class="num">4,10 tỷ</td>
+                    <td>18/06/2026</td>
+                    <td><span class="badge badge-warn">Chờ duyệt</span></td>
+                  </tr>
+                  <tr data-type="Hoàn tất">
+                    <td class="font-semibold text-gray-900">HĐ-2026-027</td>
+                    <td>Ông Phạm Đức Long</td>
+                    <td>Chuyển nhượng đất Nghèn</td>
+                    <td class="num">1,92 tỷ</td>
+                    <td>09/08/2026</td>
+                    <td><span class="badge badge-ok">Hoàn tất</span></td>
+                  </tr>
+                  <tr data-type="Đang thực hiện">
+                    <td class="font-semibold text-gray-900">HĐ-2026-031</td>
+                    <td>Bà Trần Ngọc Ánh</td>
+                    <td>Mua biệt thự phía Bắc</td>
+                    <td class="num">9,40 tỷ</td>
+                    <td>21/09/2026</td>
+                    <td><span class="badge badge-info">Đang thực hiện</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="contract-empty" class="empty-state is-hidden">
+                <p class="font-semibold text-gray-800">Không có hợp đồng phù hợp</p>
+                <p class="mt-1 text-sm text-gray-500">Thử từ khóa hoặc trạng thái khác.</p>
+              </div>
+            </div>
+          </section>
+
+          <footer class="mt-10 border-t border-gray-200 pt-4 text-xs text-gray-400">
+            © 2026 Công ty cổ phần Thành Tâm Hà Tĩnh. Hệ thống nội bộ.
+          </footer>
+        </div>
+      </div>
+    </div>
+
+  <noscript>
+    <p style="padding:1rem;font-family:sans-serif">Vui lòng bật JavaScript để sử dụng hệ thống.</p>
+  </noscript>
+  <script src="assets/js/api.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/pending-posts.js?v=admin-only"></script>
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script src="assets/js/main.js?v=supply-link"></script>
+  <script>
+    (function () {
+      function showDashboardPage(page, event) {
+        if (event) event.preventDefault();
+        if (location.hash) {
+          history.replaceState(null, "", location.pathname + location.search);
+        }
+        var scrollX = window.scrollX;
+        var scrollY = window.scrollY;
+        document.querySelectorAll("#main-content .main-inner > section[data-page]").forEach(function (section) {
+          section.classList.toggle("is-hidden", section.getAttribute("data-page") !== page);
+        });
+        document.querySelectorAll(".nav-link").forEach(function (link) {
+          var active = link.getAttribute("data-go") === page;
+          link.classList.toggle("is-active", active);
+          if (active) link.setAttribute("aria-current", "page");
+          else link.removeAttribute("aria-current");
+        });
+        window.scrollTo(scrollX, scrollY);
+      }
+      window.showDashboardPage = showDashboardPage;
+
+    })();
+  </script>
+  <script data-dashboard-count>
+    (function () {
+      var API_ORIGIN = "http://localhost:8000";
+
+      function ensureBootstrap() {
+        if (document.querySelector('link[rel="stylesheet"][href*="bootstrap"]')) return;
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
+        var styleCss = document.querySelector('link[href*="assets/css/style.css"]');
+        if (styleCss && styleCss.parentNode) styleCss.parentNode.insertBefore(link, styleCss);
+        else document.head.appendChild(link);
+      }
+
+      function loadPendingPostsCount() {
+        if (window.hideAdminOnlyModules) window.hideAdminOnlyModules();
+        if (window.isSystemAdmin && !window.isSystemAdmin()) return;
+        var node = document.getElementById("pendingCountLoading");
+        if (!node) return;
+        fetch(API_ORIGIN + "/api/dashboard/pending-posts-count", {
+          headers: { Authorization: "Bearer " + (localStorage.getItem("accessToken") || "") }
+        }).then(function (response) {
+          if (response.status === 401) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("user_id");
+            localStorage.removeItem("user_name");
+            localStorage.removeItem("user_phone");
+            localStorage.removeItem("user");
+            window.location.replace("index.html");
+            return null;
+          }
+          return response.json().then(function (data) {
+            if (!response.ok) throw new Error((data && data.detail) || "Không đếm được bài chờ duyệt.");
+            return data;
+          });
+        }).then(function (data) {
+          if (!data) return;
+          var target = document.getElementById("pendingCountLoading");
+          if (target) target.innerText = String(data.count == null ? 0 : data.count);
+        }).catch(function () {
+          var target = document.getElementById("pendingCountLoading");
+          if (target && target.innerText === "...") target.innerText = "—";
+        });
+      }
+
+      window.loadPendingPostsCount = loadPendingPostsCount;
+      ensureBootstrap();
+      if (document.readyState === "complete") loadPendingPostsCount();
+      else window.addEventListener("load", loadPendingPostsCount);
+    })();
+  </script>
+  <div id="phone-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="phone-title">
+    <button type="button" id="phone-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="phone-title" class="text-lg font-bold text-gray-900">Cài đặt</h2>
+        <button type="button" id="close-phone" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="max-h-[80vh] space-y-4 overflow-y-auto p-4">
+        <form id="account-phone-form" class="space-y-3">
+          <h3 class="text-base font-bold text-gray-900">Cập nhật số điện thoại</h3>
+          <div>
+            <label class="label" for="account-name">Họ tên</label>
+            <input id="account-name" class="input" type="text" readonly>
+          </div>
+          <div>
+            <label class="label" for="account-phone">Số điện thoại</label>
+            <input id="account-phone" class="input" type="tel" maxlength="20" placeholder="0912 345 678" autocomplete="tel">
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="button" id="cancel-phone" class="btn btn-secondary">Hủy</button>
+            <button type="submit" class="btn btn-primary">Lưu số điện thoại</button>
+          </div>
+        </form>
+        <hr class="border-gray-200">
+        <form id="change-password-form" class="space-y-3">
+          <h3 class="text-base font-bold text-gray-900">Đổi mật khẩu</h3>
+          <div>
+            <label class="label" for="current-password">Mật khẩu hiện tại</label>
+            <input id="current-password" class="input" type="password" autocomplete="current-password">
+          </div>
+          <div>
+            <label class="label" for="new-password">Mật khẩu mới</label>
+            <input id="new-password" class="input" type="password" autocomplete="new-password">
+          </div>
+          <div>
+            <label class="label" for="confirm-password">Xác nhận mật khẩu mới</label>
+            <input id="confirm-password" class="input" type="password" autocomplete="new-password">
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="submit" class="btn btn-primary">Lưu mật khẩu mới</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/dashboard.js?v=topbar-compact"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

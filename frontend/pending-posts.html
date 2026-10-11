@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <script>
+    (function () {
+      var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+      var user = null;
+      try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+      var role = user ? String(user.role || "").trim().toLowerCase() : "";
+      var title = user ? String(user.chuc_vu || "").trim().toLowerCase() : "";
+      if (label === "admin" || role === "admin" || title === "admin") return;
+      window.location.replace("dashboard.html");
+    })();
+  </script>
+  <title>Bài chờ duyệt · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <header id="topbar">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+      <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+        <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+        <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+        <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+      </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </a>
+      <div id="userInfoWrapper">
+        <div id="topbarUserName">Đang tải...</div>
+        <div id="topbarUserEmail"></div>
+      </div>
+      <button id="btnLogout" class="logout-btn" type="button">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span class="logout-label">Đăng xuất</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="backdrop"></div>
+
+  <div id="shell" class="d-flex">
+    <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+      <nav class="sidebar-nav" aria-label="Menu chính">
+        <p class="nav-section">Phân hệ</p>
+        <button type="button" class="nav-link" data-go="dashboard" data-label="Tổng quan">
+          <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+          <span class="nav-label">Tổng quan</span>
+        </button>
+        <a class="nav-link no-underline" href="properties.html" data-go="supply" data-label="Nguồn cung">
+          <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+          <span class="nav-label">Nguồn cung</span>
+        </a>
+        <a id="navPendingPosts" class="nav-link is-active no-underline" href="pending-posts.html" data-go="pending" data-label="Bài chờ duyệt" aria-current="page">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+          <span class="nav-label">Bài chờ duyệt</span>
+        </a>
+        <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+          <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          <span class="nav-label">Tra cứu giá đất</span>
+        </a>
+        <a id="navManageUsers" class="nav-link no-underline" href="users.html" data-go="staff" data-label="Quản lý nhân viên">
+          <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+          <span class="nav-label">Quản lý nhân viên</span>
+        </a>
+        <a class="nav-link no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh">
+          <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+          <span class="nav-label">Hợp đồng Kinh doanh</span>
+        </a>
+        <a class="nav-link no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê">
+          <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+          <span class="nav-label">Báo cáo Thống kê</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+    </aside>
+    <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+    <div id="main-content">
+      <nav aria-label="Đường dẫn" class="sticky top-16 z-30 -mx-4 -mt-6 mb-4 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:-mx-6 sm:-mt-7 lg:-mx-8 lg:-mt-8">
+        <ol class="flex items-center gap-2">
+          <li>
+            <a href="dashboard.html" data-go="dashboard" class="inline-flex items-center gap-1.5 transition hover:text-[#155cc0]">
+              <i class="fa-solid fa-home" aria-hidden="true"></i>
+              <span>Tổng quan</span>
+            </a>
+          </li>
+          <li class="text-[10px] text-gray-400" aria-hidden="true">
+            <i class="fa-solid fa-chevron-right"></i>
+          </li>
+          <li class="font-medium text-gray-800" aria-current="page">Bài chờ duyệt</li>
+        </ol>
+      </nav>
+
+      <h1 class="mb-2 text-xl font-bold text-gray-900">Quản lý bài viết chờ duyệt</h1>
+      <p class="pending-note text-sm text-gray-500">Các bài nhân viên đã chuẩn bị. Quản trị viên duyệt trước khi đăng Fanpage.</p>
+      <p id="pending-loading" class="pending-state text-sm text-gray-500">Đang tải bài chờ duyệt...</p>
+      <p id="pending-empty" class="pending-state is-hidden rounded-lg bg-white p-8 text-center text-sm text-gray-500 shadow-sm">Chưa có bài chờ duyệt.</p>
+      <p id="pending-error" class="pending-state is-hidden rounded-lg bg-white p-8 text-center text-sm text-red-600 shadow-sm">Không tải được danh sách bài chờ duyệt.</p>
+      <span class="hidden h-48 h-96 mt-3 overflow-hidden rounded-lg bg-gray-100 grid h-full gap-1 grid-cols-1 grid-cols-2 grid-rows-2 row-span-2 min-h-0 object-cover object-contain bg-black relative z-10 pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-bold text-white line-clamp-2 top-1 right-1 bg-red-500 rounded-full w-6 h-6 w-full cursor-pointer hover:bg-red-600 opacity-80 hover:opacity-100" aria-hidden="true"></span>
+      <div id="pending-list" class="pending-list"></div>
+      <template id="pending-card-template">
+        <article class="pending-card">
+          <div class="pending-card-head">
+            <div>
+              <p class="pending-employee"></p>
+              <p class="pending-time"></p>
+            </div>
+            <span class="pending-badge">Chờ duyệt</span>
+          </div>
+          <div class="pending-content line-clamp-2 overflow-hidden"></div>
+          <span class="js-see-more mt-1 inline-block cursor-pointer text-sm font-semibold text-[#155cc0]">Xem thêm</span>
+          <div class="pending-images"></div>
+          <div class="pending-video"></div>
+          <p class="pending-no-images is-hidden">Bài viết không có ảnh.</p>
+          <fieldset class="pending-media-choice mt-3 flex flex-col gap-2 text-sm text-gray-800">
+            <legend class="mb-1 font-semibold">Hình thức đăng Fanpage</legend>
+            <label class="flex items-center gap-2">
+              <input class="pending-choice" type="radio" name="media-choice" value="image" checked>
+              Đăng bằng Hình ảnh
+            </label>
+            <label class="flex items-center gap-2">
+              <input class="pending-choice" type="radio" name="media-choice" value="video">
+              Đăng bằng Video
+            </label>
+          </fieldset>
+          <div class="pending-actions">
+            <button type="button" class="pending-reject btn btn-secondary">❌ Từ chối</button>
+            <button type="button" class="pending-approve btn btn-primary">✅ Duyệt &amp; Đăng Fanpage</button>
+          </div>
+        </article>
+      </template>
+    </div>
+  </div>
+
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/pending-posts.js?v=admin-only"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script>
+    (function () {
+      document.getElementById("btnLogout").addEventListener("click", function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        window.location.replace("index.html");
+      });
+
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

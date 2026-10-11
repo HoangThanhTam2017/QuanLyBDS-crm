@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <title>Hợp đồng kinh doanh · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <!-- Topbar giữ nguyên hệ thống nội bộ -->
+  <header id="topbar">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+      <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+        <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+        <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+        <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+      </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </a>
+      <div id="userInfoWrapper">
+        <div id="topbarUserName">Đang tải...</div>
+        <div id="topbarUserEmail"></div>
+      </div>
+      <button id="btnLogout" class="logout-btn" type="button">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span class="logout-label">Đăng xuất</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="backdrop"></div>
+
+  <div id="shell" class="d-flex">
+    <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+      <nav class="sidebar-nav" aria-label="Menu chính">
+        <p class="nav-section">Phân hệ</p>
+        <button type="button" class="nav-link" data-go="dashboard" data-label="Tổng quan">
+          <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+          <span class="nav-label">Tổng quan</span>
+        </button>
+        <a class="nav-link no-underline" href="properties.html" data-go="supply" data-label="Nguồn cung">
+          <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+          <span class="nav-label">Nguồn cung</span>
+        </a>
+        <a id="navPendingPosts" class="nav-link no-underline" href="pending-posts.html" data-go="pending" data-label="Bài chờ duyệt">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+          <span class="nav-label">Bài chờ duyệt</span>
+        </a>
+        <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+          <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          <span class="nav-label">Tra cứu giá đất</span>
+        </a>
+        <a id="navManageUsers" class="nav-link no-underline" href="users.html" data-go="staff" data-label="Quản lý nhân viên">
+          <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+          <span class="nav-label">Quản lý nhân viên</span>
+        </a>
+        <a class="nav-link is-active active no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh" aria-current="page">
+          <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+          <span class="nav-label">Hợp đồng Kinh doanh</span>
+        </a>
+        <a class="nav-link no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê">
+          <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+          <span class="nav-label">Báo cáo Thống kê</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+    </aside>
+    <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+    <div id="main-content">
+      <style>
+        .card {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 1rem;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        .card-header {
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #e5e7eb;
+          font-weight: 700;
+          color: #111827;
+        }
+        .card-body { padding: 1.25rem; }
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.15rem 0.65rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+        }
+        .bg-warning { background: #fef3c7; color: #92400e; }
+        .bg-success { background: #dcfce7; color: #166534; }
+        .bg-danger { background: #fee2e2; color: #991b1b; }
+        .bg-info { background: #cff4fc; color: #111827; }
+        .text-dark { color: #111827; }
+        .badge.bg-warning.text-dark,
+        .badge.bg-info.text-dark { color: #111827; }
+        .due-line { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        #contract-tab-content .pagination-container {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 1rem;
+        }
+        #contract-tab-content .pagination {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        #contract-tab-content .page-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 2.25rem;
+          height: 2.25rem;
+          padding: 0 0.65rem;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          background: #fff;
+          color: #155cc0;
+          font-weight: 700;
+          cursor: pointer;
+          text-decoration: none;
+        }
+        #contract-tab-content .page-item.active .page-link {
+          background: #8e0b2c;
+          border-color: #8e0b2c;
+          color: #fff;
+        }
+        #contract-tab-content .page-item.disabled .page-link {
+          color: #9ca3af;
+          background: #f3f4f6;
+          cursor: default;
+          pointer-events: none;
+        }
+        #contract-tab-content .page-item:not(.active):not(.disabled) .page-link:hover { background: #fdf2f4; }
+        #contract-tabs.nav-tabs {
+          display: flex;
+          gap: 0.25rem;
+          list-style: none;
+          margin: 0;
+          padding: 0 0.25rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        #contract-tabs .nav-item { margin: 0; }
+        #contract-tabs .nav-link {
+          appearance: none;
+          display: inline-flex;
+          align-items: center;
+          width: auto;
+          margin: 0;
+          background: transparent;
+          border: 1px solid transparent;
+          border-bottom: 0;
+          border-radius: 0.65rem 0.65rem 0 0;
+          padding: 0.7rem 1rem;
+          font-size: 0.925rem;
+          font-weight: 700;
+          color: #4b5563;
+          cursor: pointer;
+        }
+        #contract-tabs .nav-link.active {
+          background: rgba(142, 11, 44, 0.09);
+          color: #8e0b2c;
+          border-color: #e5e7eb #e5e7eb #fff;
+          box-shadow: inset 0 -2px 0 #8e0b2c;
+        }
+        #contract-tab-content.tab-content {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-top: 0;
+          border-radius: 0 0 1rem 1rem;
+          padding: 1rem;
+        }
+        #contract-tab-content .tab-pane { display: none; }
+        #contract-tab-content .tab-pane.fade.show.active { display: block; }
+        .justify-content-between { justify-content: space-between; }
+        .gap-3 { gap: 1rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .fs-6 { font-size: 0.875rem; line-height: 1.25rem; }
+        .fw-semibold { font-weight: 600; }
+        .text-warning { color: #d97706; }
+        .text-success { color: #15803d; }
+        .text-danger { color: #b91c1c; }
+        #contract-message:empty { display: none; }
+        @media (max-width: 640px) {
+          #contract-toolbar { flex-wrap: wrap; row-gap: 0.75rem; }
+          #contract-tabs.nav-tabs { overflow-x: auto; }
+          #contract-tabs .nav-link { white-space: nowrap; }
+        }
+        .modal {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 70;
+          overflow-y: auto;
+          background: rgba(15, 23, 42, 0.5);
+        }
+        .modal.show { display: block; }
+        .modal-dialog {
+          width: min(40rem, calc(100% - 2rem));
+          margin: 2rem auto;
+        }
+        .modal-content {
+          background: #fff;
+          border-radius: 1rem;
+          overflow: hidden;
+        }
+        .modal-header, .modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-footer { border-bottom: 0; border-top: 1px solid #e5e7eb; justify-content: flex-end; }
+        .modal-body { padding: 1.25rem; }
+        .modal-title { font-size: 1.05rem; font-weight: 700; }
+        .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #contract-modal .icon-btn { color: #374151; background: transparent; }
+        .row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; margin: 0; }
+        .d-flex { display: flex; }
+        .flex-column { flex-direction: column; }
+        .align-items-center { align-items: center; }
+        .align-items-start { align-items: flex-start; }
+        .align-items-end { align-items: flex-end; }
+        .fw-bold { font-weight: 700; }
+        .text-muted { color: #6b7280; }
+        .justify-content-center { justify-content: center; }
+        #main-content .gap-2 { gap: 0.5rem; }
+        .gap-1 { gap: 0.25rem; }
+        .col-auto { flex: 0 0 auto; width: auto; max-width: 100%; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .col-form-label { margin: 0; font-size: 0.875rem; font-weight: 600; color: #374151; }
+        .btn-sm { min-height: 1.85rem; height: 1.85rem; padding: 0 0.45rem; font-size: 0.8rem; }
+        .btn-success { background: #15803d; border-color: #15803d; color: #fff; }
+        .btn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+        .btn-success:hover { background: #166534; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-outline-success {
+          background: #fff;
+          color: #15803d;
+          border-color: #15803d;
+        }
+        .btn-outline-success:hover { background: #15803d; color: #fff; }
+        #globalYearSelect {
+          width: 120px;
+          height: 2.5rem;
+          flex: 0 0 auto;
+          border: 1px solid #d1d5db;
+          border-radius: 0.7rem;
+          background: #fff;
+          padding: 0 0.55rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #111827;
+        }
+        #deposit-body .btn-warning { background: #d97706; border-color: #d97706; color: #fff; }
+        #deposit-body .btn-warning:hover { background: #b45309; }
+        #deposit-body .btn-dark { background: #374151; border-color: #374151; color: #fff; }
+        #deposit-body .btn-dark:hover { background: #111827; }
+        #deposit-body .d-flex { flex-wrap: nowrap; }
+        #contract-modal .modal-dialog { width: min(36rem, calc(100% - 1.25rem)); margin: 0.75rem auto; }
+        #contract-modal .modal-header,
+        #contract-modal .modal-footer { padding: 0.55rem 0.85rem; }
+        #contract-modal .modal-body { padding: 0.55rem 0.85rem 0.35rem; }
+        #contract-modal .row { flex-wrap: nowrap; align-items: center; gap: 0.5rem; }
+        #contract-modal .row.mb-2 { margin-bottom: 0.5rem; }
+        #contract-modal .col-4 { flex: 0 0 33.333%; max-width: 33.333%; }
+        #contract-modal .col-8 { flex: 1 1 0; min-width: 0; }
+        #contract-modal .text-end { text-align: right; }
+        #contract-modal .col-form-label {
+          font-size: 0.875rem;
+          line-height: 1.25;
+          padding: 0;
+        }
+        .d-none { display: none !important; }
+        .text-nowrap { white-space: nowrap; }
+        .w-100 { width: 100%; }
+        .mt-2 { margin-top: 0.5rem; }
+        @media (min-width: 768px) {
+          .d-md-block { display: block !important; }
+          .flex-md-row { flex-direction: row !important; }
+          .align-items-md-start { align-items: flex-start !important; }
+          .align-items-md-end { align-items: flex-end !important; }
+          .w-md-auto { width: auto !important; }
+          .mt-md-0 { margin-top: 0 !important; }
+          #contract-page-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-rows: auto auto;
+            row-gap: 0.5rem;
+            column-gap: 1rem;
+            align-items: start;
+          }
+          #contract-page-head .contract-title-row { display: contents !important; }
+          #contract-page-head .contract-title-block {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            align-self: start;
+            width: auto;
+          }
+          #contract-page-head .contract-year {
+            grid-column: 2;
+            grid-row: 1;
+            justify-self: end;
+          }
+          #contract-page-head .contract-actions {
+            grid-column: 2;
+            grid-row: 2;
+            justify-self: end;
+          }
+        }
+        @media (max-width: 767.98px) {
+          #contract-page-head { gap: 0; }
+          #contract-page-head .contract-title-block { min-width: 0; flex: 1 1 auto; }
+          #contract-page-head h1 {
+            font-size: 1.25rem;
+            line-height: 1.2;
+          }
+          #contract-page-head .contract-actions .btn {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 0.45rem 0.4rem;
+            font-size: 0.75rem;
+          }
+          #globalYearSelect {
+            width: auto !important;
+            height: 2rem;
+            font-size: 0.8125rem;
+            padding: 0 1.4rem 0 0.5rem;
+          }
+        }
+      </style>
+
+      <nav aria-label="Đường dẫn" class="sticky top-16 z-30 -mx-4 -mt-6 mb-4 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:-mx-6 sm:-mt-7 lg:-mx-8 lg:-mt-8">
+        <ol class="flex items-center gap-2">
+          <li>
+            <a href="dashboard.html" data-go="dashboard" class="inline-flex items-center gap-1.5 transition hover:text-[#155cc0]">
+              <i class="fa-solid fa-home" aria-hidden="true"></i>
+              <span>Tổng quan</span>
+            </a>
+          </li>
+          <li class="text-[10px] text-gray-400" aria-hidden="true">
+            <i class="fa-solid fa-chevron-right"></i>
+          </li>
+          <li class="font-medium text-gray-800" aria-current="page">Hợp đồng kinh doanh</li>
+        </ol>
+      </nav>
+
+      <div id="contract-page-head" class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3">
+        <div class="contract-title-row d-flex justify-content-between align-items-center w-100 w-md-auto gap-2">
+          <div class="contract-title-block">
+            <h1 class="fw-bold mb-0 text-xl text-gray-900 text-nowrap fs-5">Hợp đồng kinh doanh</h1>
+            <p class="text-muted mb-0 text-sm d-none d-md-block">Theo dõi hợp đồng đặt cọc và hạn thanh toán.</p>
+          </div>
+          <div class="contract-year">
+            <select id="globalYearSelect" class="form-select form-select-sm w-auto" style="width: 120px;"></select>
+          </div>
+        </div>
+        <div class="contract-actions d-flex gap-2 w-100 w-md-auto mt-2 mt-md-0">
+          <button class="btn btn-primary shrink-0 w-100 w-md-auto" id="btnCreateContract" type="button">Tạo hợp đồng mới</button>
+          <button class="btn btn-primary shrink-0 w-100 w-md-auto" id="btnExportExcel" type="button">
+            <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
+            Xuất báo cáo
+          </button>
+        </div>
+      </div>
+
+      <div id="contract-toolbar" class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex gap-3 fs-6 fw-semibold">
+          <span>Đang Đặt cọc: <strong id="countDatCoc" class="text-warning">0</strong></span>
+          <span>Đã Thanh toán: <strong id="countThanhToan" class="text-success">0</strong></span>
+          <span>Đã Hủy: <strong id="countHuy" class="text-danger">0</strong></span>
+        </div>
+      </div>
+      <p id="contract-message" class="mb-3 text-sm text-gray-500"></p>
+
+      <ul class="nav nav-tabs" id="contract-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="tab" data-bs-target="#pane-dat-coc" data-tab="pane-dat-coc" role="tab" aria-selected="true">Đang Đặt cọc</button></li>
+        <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#pane-thanh-toan" data-tab="pane-thanh-toan" role="tab" aria-selected="false">Đã Thanh toán</button></li>
+        <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#pane-huy" data-tab="pane-huy" role="tab" aria-selected="false">Hủy HĐ</button></li>
+      </ul>
+      <div class="tab-content" id="contract-tab-content">
+        <div class="tab-pane fade show active" id="pane-dat-coc" role="tabpanel">
+          <div class="table-responsive">
+            <table class="data w-full">
+              <caption class="sr-only">Hợp đồng đang đặt cọc</caption>
+              <thead>
+                <tr>
+                  <th class="col-nhan-vien" style="display: none;">Tên nhân viên</th>
+                  <th id="colActionTitle">Hành động</th>
+                  <th>Ngày cọc</th>
+                  <th>Ngày thanh toán</th>
+                  <th>Địa chỉ</th>
+                  <th class="num">SL</th>
+                  <th class="num">Giá bán</th>
+                  <th class="num">Hoa hồng</th>
+                  <th>Bên mua</th>
+                  <th>Bên bán</th>
+                  <th>Làm từ</th>
+                  <th>Nguồn</th>
+                </tr>
+              </thead>
+              <tbody id="deposit-body">
+                <tr><td colspan="11" class="text-center text-sm text-gray-500">Đang tải hợp đồng...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-container d-flex justify-content-end mt-3" id="pagination-dat-coc"></div>
+        </div>
+        <div class="tab-pane fade" id="pane-thanh-toan" role="tabpanel">
+          <div class="table-responsive">
+            <table class="data w-full">
+              <caption class="sr-only">Hợp đồng đã thanh toán</caption>
+              <thead>
+                <tr>
+                  <th class="col-nhan-vien" style="display: none;">Tên nhân viên</th>
+                  <th>Ngày cọc</th>
+                  <th>Ngày thanh toán</th>
+                  <th>Địa chỉ</th>
+                  <th class="num">SL</th>
+                  <th class="num">Giá bán</th>
+                  <th class="num">Hoa hồng</th>
+                  <th>Bên mua</th>
+                  <th>Bên bán</th>
+                  <th>Làm từ</th>
+                  <th>Nguồn</th>
+                </tr>
+              </thead>
+              <tbody id="paid-body">
+                <tr><td colspan="10" class="text-center text-sm text-gray-500">Đang tải hợp đồng...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-container d-flex justify-content-end mt-3" id="pagination-thanh-toan"></div>
+        </div>
+        <div class="tab-pane fade" id="pane-huy" role="tabpanel">
+          <div class="table-responsive">
+            <table class="data w-full">
+              <caption class="sr-only">Hợp đồng đã hủy</caption>
+              <thead>
+                <tr>
+                  <th class="col-nhan-vien" style="display: none;">Tên nhân viên</th>
+                  <th>Ngày cọc</th>
+                  <th>Ngày thanh toán</th>
+                  <th>Địa chỉ</th>
+                  <th class="num">SL</th>
+                  <th class="num">Giá bán</th>
+                  <th class="num">Hoa hồng</th>
+                  <th>Bên mua</th>
+                  <th>Bên bán</th>
+                  <th>Làm từ</th>
+                  <th>Nguồn</th>
+                </tr>
+              </thead>
+              <tbody id="cancelled-body">
+                <tr><td colspan="10" class="text-center text-sm text-gray-500">Đang tải hợp đồng...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-container d-flex justify-content-end mt-3" id="pagination-huy"></div>
+        </div>
+      </div>
+
+      <div id="contract-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="contract-modal-title">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form id="contract-form">
+              <input type="hidden" id="contractId" name="contract_id" value="">
+              <div class="modal-header">
+                <h2 id="contract-modal-title" class="modal-title">Tạo hợp đồng đặt cọc</h2>
+                <button id="close-contract" class="icon-btn text-gray-600" type="button" aria-label="Đóng">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="buyer-name">Bên mua</label>
+                  <div class="col-8"><input id="buyer-name" class="input" name="buyer_name" type="text" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="seller-name">Bên bán</label>
+                  <div class="col-8"><input id="seller-name" class="input" name="seller_name" type="text" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="land-address">Địa chỉ</label>
+                  <div class="col-8"><input id="land-address" class="input" name="land_address" type="text" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="contract-quantity">SL hợp đồng</label>
+                  <div class="col-8"><input id="contract-quantity" class="input" name="contract_quantity" type="number" min="1" step="1" value="1" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="lam-tu">Làm từ</label>
+                  <div class="col-8">
+                    <select id="lam-tu" class="input" name="lam_tu" required>
+                      <option value="Chính chủ">Chính chủ</option>
+                      <option value="CTV">CTV</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="nguon">Nguồn</label>
+                  <div class="col-8">
+                    <select id="nguon" class="input" name="nguon" required>
+                      <option value="Nguồn cung">Nguồn cung</option>
+                      <option value="Nguồn cầu">Nguồn cầu</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="sale-price">Giá bán</label>
+                  <div class="col-8"><input id="sale-price" class="input" name="sale_price" type="text" inputmode="numeric" autocomplete="off" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="commission">Hoa hồng</label>
+                  <div class="col-8"><input id="commission" class="input" name="commission" type="text" inputmode="numeric" autocomplete="off" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="deposit-date">Ngày cọc</label>
+                  <div class="col-8"><input id="deposit-date" class="input" name="deposit_date" type="date" required></div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                  <label class="col-4 col-form-label text-end" for="ngay-thanh-toan">Ngày thanh toán</label>
+                  <div class="col-8"><input id="ngay-thanh-toan" class="input" name="ngay_thanh_toan" type="date" required></div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button id="cancel-contract" class="btn btn-secondary" type="button">Đóng</button>
+                <button class="btn btn-primary" type="submit">Lưu hợp đồng</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/pending-posts.js?v=admin-only"></script>
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script>
+    (function () {
+      document.getElementById("btnLogout").addEventListener("click", function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        localStorage.removeItem("user");
+        window.location.replace("index.html");
+      });
+
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script data-contracts>
+    (function () {
+      var API_ORIGIN = "http://localhost:8000";
+      var selectedYear = new Date().getFullYear();
+
+      function initYearSelect() {
+        var select = document.getElementById("globalYearSelect");
+        if (!select) return;
+        var current = new Date().getFullYear();
+        select.innerHTML = "";
+        for (var year = current; year >= current - 6; year -= 1) {
+          var option = document.createElement("option");
+          option.value = String(year);
+          option.textContent = String(year);
+          select.appendChild(option);
+        }
+        select.value = String(current);
+        selectedYear = current;
+        select.addEventListener("change", function () {
+          selectedYear = Number(select.value) || current;
+          Object.keys(tabPages).forEach(function (key) { tabPages[key] = 1; });
+          loadContracts().catch(function (error) {
+            var message = document.getElementById("contract-message");
+            if (message) message.textContent = error.message;
+          });
+        });
+      }
+
+      function contractQuery(path) {
+        var params = ["year=" + encodeURIComponent(selectedYear)];
+        var id = localStorage.getItem("user_id") || "";
+        if (id) params.push("user_id=" + encodeURIComponent(id));
+        return path + (path.indexOf("?") === -1 ? "?" : "&") + params.join("&");
+      }
+
+      function formatMoney(amount) {
+        var value = Number(amount);
+        if (!isFinite(value)) value = 0;
+        return new Intl.NumberFormat("vi-VN").format(value) + " đ";
+      }
+      window.formatMoney = formatMoney;
+
+      function formatDate(value) {
+        if (!value) return "";
+        var parts = String(value).slice(0, 10).split("-");
+        if (parts.length !== 3) return value;
+        return parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+
+      function formatThousands(value) {
+        var digits = String(value || "").replace(/\D/g, "");
+        if (!digits) return "";
+        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      }
+
+      function moneyToNumber(value) {
+        return Number(String(value || "").replace(/\./g, "").replace(/\D/g, "")) || 0;
+      }
+
+      function bindMoneyInput(input) {
+        if (!input) return;
+        input.addEventListener("input", function () {
+          var next = formatThousands(input.value);
+          if (input.value !== next) input.value = next;
+        });
+      }
+
+      function todayIso() {
+        var now = new Date();
+        var month = String(now.getMonth() + 1).padStart(2, "0");
+        var day = String(now.getDate()).padStart(2, "0");
+        return now.getFullYear() + "-" + month + "-" + day;
+      }
+
+      function authHeaders(json) {
+        var headers = { Authorization: "Bearer " + (localStorage.getItem("accessToken") || "") };
+        if (json) headers["Content-Type"] = "application/json";
+        return headers;
+      }
+
+      function expireSession() {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        localStorage.removeItem("user");
+        window.location.replace("index.html");
+      }
+
+      function api(path, options) {
+        return fetch(API_ORIGIN + path, options).then(function (response) {
+          if (response.status === 401) {
+            expireSession();
+            throw new Error("Phiên đăng nhập đã hết hạn.");
+          }
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (!response.ok) {
+              var detail = data && data.detail;
+              if (Array.isArray(detail)) detail = detail.map(function (item) { return item.msg; }).join(" ");
+              throw new Error(detail || "Không thực hiện được thao tác.");
+            }
+            return data;
+          });
+        });
+      }
+
+      function dayDistance(isoDate) {
+        var parts = String(isoDate || "").slice(0, 10).split("-");
+        if (parts.length !== 3) return null;
+        var due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (isNaN(due.getTime())) return null;
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.round((due.getTime() - today.getTime()) / 86400000);
+      }
+
+      function dueDateCell(row) {
+        var td = document.createElement("td");
+        if (!row.ngay_thanh_toan) {
+          td.textContent = "—";
+          return td;
+        }
+        if (row.status !== "Đặt cọc") {
+          td.textContent = formatDate(row.ngay_thanh_toan);
+          return td;
+        }
+        var line = document.createElement("span");
+        line.className = "due-line";
+        var dateText = document.createElement("span");
+        dateText.textContent = formatDate(row.ngay_thanh_toan);
+        line.appendChild(dateText);
+        var distance = dayDistance(row.ngay_thanh_toan);
+        if (distance !== null) {
+          var badge = document.createElement("span");
+          if (distance < 0) {
+            badge.className = "badge bg-danger";
+            badge.textContent = "Trễ " + Math.abs(distance) + " ngày";
+          } else if (distance === 0) {
+            badge.className = "badge bg-warning text-dark";
+            badge.textContent = "Đến hạn hôm nay";
+          } else {
+            badge.className = "badge bg-info text-dark";
+            badge.textContent = "Còn " + distance + " ngày";
+          }
+          line.appendChild(badge);
+        }
+        td.appendChild(line);
+        return td;
+      }
+
+      function textCell(value, numeric) {
+        var td = document.createElement("td");
+        if (numeric) td.className = "num";
+        td.textContent = value == null ? "" : value;
+        return td;
+      }
+
+      function iconButton(className, title, icon, onClick) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn btn-sm " + className;
+        button.title = title;
+        button.setAttribute("aria-label", title);
+        button.innerHTML = '<i class="fa-solid ' + icon + '" aria-hidden="true"></i>';
+        button.addEventListener("click", onClick);
+        return button;
+      }
+
+      function currentUserId() {
+        var raw = localStorage.getItem("user_id");
+        if (raw) {
+          var parsed = Number(raw);
+          if (!isNaN(parsed)) return parsed;
+        }
+        var stored = readStoredUser();
+        if (stored && stored.id != null && !isNaN(Number(stored.id))) return Number(stored.id);
+        return null;
+      }
+
+      function isContractAdmin(role) {
+        return String(role || "").trim().toLowerCase() === "admin";
+      }
+
+      function canModifyContract(row, role) {
+        if (isContractAdmin(role)) return false;
+        var ownerId = row && row.created_by_id != null ? row.created_by_id : (row ? row.user_id : null);
+        var mine = currentUserId();
+        return ownerId != null && mine != null && Number(ownerId) === Number(mine);
+      }
+
+      function actionCell(row, canModify) {
+        var td = document.createElement("td");
+        if (!canModify) return td;
+        var actions = document.createElement("div");
+        var statusName = String(row.status || "").trim().toLowerCase();
+        var unpaid = statusName !== "đã thanh toán" && statusName !== "hủy";
+        actions.className = "d-flex gap-1 justify-content-center";
+        if (unpaid) {
+          actions.appendChild(iconButton("btn-success", "Thanh toán", "fa-check", function () {
+            changeStatus(row.id, "Đã thanh toán");
+          }));
+          actions.appendChild(iconButton("btn-danger", "Hủy", "fa-xmark", function () {
+            changeStatus(row.id, "Hủy");
+          }));
+        }
+        actions.appendChild(iconButton("btn-warning", "Sửa", "fa-pencil", function () {
+          openEdit(row);
+        }));
+        actions.appendChild(iconButton("btn-dark", "Xóa", "fa-trash", function () {
+          deleteContract(row.id);
+        }));
+        td.appendChild(actions);
+        return td;
+      }
+
+      function seesCompany(role) {
+        var value = String(role || "").trim().toLowerCase();
+        return value === "admin" || value === "giám đốc";
+      }
+
+      function canManageContracts(role) {
+        var value = String(role || "").trim().toLowerCase();
+        var allowed = [
+          "admin",
+          "giam_doc",
+          "giám đốc",
+          "giam doc",
+          "director",
+          "manager",
+          "nhan_vien",
+          "nhân viên",
+          "user",
+          "trưởng nhóm",
+          "truong_nhom",
+          "truong nhom"
+        ];
+        if (!value || allowed.indexOf(value) !== -1) return true;
+        return value.indexOf("giám đốc") !== -1 || value.indexOf("giam doc") !== -1 || value.indexOf("giám") !== -1;
+      }
+
+      function showStaffColumn(show) {
+        document.querySelectorAll("th.col-nhan-vien").forEach(function (header) {
+          header.style.display = show ? "table-cell" : "none";
+        });
+      }
+
+      function applyDirectorView(role) {
+        var admin = isContractAdmin(role);
+        var header = document.getElementById("colActionTitle");
+        if (header) header.style.display = admin ? "none" : "";
+        var createButton = document.getElementById("btnCreateContract");
+        if (createButton) createButton.style.display = canManageContracts(role) ? "" : "none";
+        return admin;
+      }
+
+      function renderContractTable(rows, bodyId, withActions, showStaff, role) {
+        var body = document.getElementById(bodyId);
+        if (!body) return;
+        var colSpan = (withActions ? 11 : 10) + (showStaff ? 1 : 0);
+        body.replaceChildren();
+        if (!rows.length) {
+          var empty = document.createElement("tr");
+          var cell = document.createElement("td");
+          cell.colSpan = colSpan;
+          cell.className = "text-center text-sm text-gray-500";
+          cell.textContent = "Chưa có hợp đồng.";
+          empty.appendChild(cell);
+          body.appendChild(empty);
+          return;
+        }
+        rows.forEach(function (row) {
+          var tr = document.createElement("tr");
+          if (showStaff) tr.appendChild(textCell(row.ten_nhan_vien));
+          if (withActions) tr.appendChild(actionCell(row, canModifyContract(row, role)));
+          tr.appendChild(textCell(formatDate(row.deposit_date)));
+          tr.appendChild(dueDateCell(row));
+          tr.appendChild(textCell(row.land_address));
+          tr.appendChild(textCell(row.contract_quantity, true));
+          tr.appendChild(textCell(formatMoney(row.sale_price), true));
+          tr.appendChild(textCell(formatMoney(row.commission), true));
+          tr.appendChild(textCell(row.buyer_name));
+          tr.appendChild(textCell(row.seller_name));
+          tr.appendChild(textCell(row.lam_tu));
+          tr.appendChild(textCell(row.nguon));
+          body.appendChild(tr);
+        });
+      }
+
+      function setGroupCount(id, count) {
+        var node = document.getElementById(id);
+        if (node) node.textContent = String(count);
+      }
+
+      var tabPages = { "Đặt cọc": 1, "Đã thanh toán": 1, "Hủy": 1 };
+      var tabViews = {
+        "Đặt cọc": { body: "deposit-body", pagination: "pagination-dat-coc", count: "countDatCoc", actions: true },
+        "Đã thanh toán": { body: "paid-body", pagination: "pagination-thanh-toan", count: "countThanhToan", actions: false },
+        "Hủy": { body: "cancelled-body", pagination: "pagination-huy", count: "countHuy", actions: false }
+      };
+
+      function contractListUrl(statusName, page) {
+        var params = [
+          "year=" + encodeURIComponent(selectedYear),
+          "status=" + encodeURIComponent(statusName),
+          "page=" + encodeURIComponent(page || 1),
+          "limit=10"
+        ];
+        var id = localStorage.getItem("user_id") || "";
+        if (id) params.push("user_id=" + encodeURIComponent(id));
+        return "/api/contracts?" + params.join("&");
+      }
+
+      function renderPagination(totalPages, currentPage, containerId, statusName) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        container.replaceChildren();
+        if (!totalPages) return;
+        currentPage = Math.min(Math.max(currentPage || 1, 1), totalPages);
+        var list = document.createElement("ul");
+        list.className = "pagination";
+
+        function goTo(targetPage) {
+          return function (event) {
+            if (event) event.preventDefault();
+            loadContracts(statusName, targetPage).catch(function (error) {
+              var message = document.getElementById("contract-message");
+              if (message) message.textContent = error.message;
+            });
+          };
+        }
+
+        function addControl(label, targetPage, disabled) {
+          var item = document.createElement("li");
+          item.className = "page-item" + (disabled ? " disabled" : "");
+          var link = document.createElement("a");
+          link.className = "page-link";
+          link.href = "#";
+          link.textContent = label;
+          if (disabled) {
+            link.setAttribute("aria-disabled", "true");
+            link.tabIndex = -1;
+            link.addEventListener("click", function (event) { event.preventDefault(); });
+          } else {
+            link.addEventListener("click", goTo(targetPage));
+          }
+          item.appendChild(link);
+          list.appendChild(item);
+        }
+
+        function addEllipsis() {
+          var item = document.createElement("li");
+          item.className = "page-item disabled";
+          var mark = document.createElement("span");
+          mark.className = "page-link";
+          mark.textContent = "...";
+          item.appendChild(mark);
+          list.appendChild(item);
+        }
+
+        var windowStart = Math.max(1, currentPage - 2);
+        var windowEnd = Math.min(totalPages, currentPage + 2);
+        var visible = [];
+        function remember(pageNumber) {
+          if (pageNumber >= 1 && pageNumber <= totalPages && visible.indexOf(pageNumber) === -1) visible.push(pageNumber);
+        }
+        remember(1);
+        for (var pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) remember(pageNumber);
+        remember(totalPages);
+        visible.sort(function (left, right) { return left - right; });
+
+        addControl("Đầu", 1, currentPage === 1);
+        addControl("Trước", currentPage - 1, currentPage === 1);
+        visible.forEach(function (pageNumber, index) {
+          if (index > 0 && pageNumber - visible[index - 1] > 1) addEllipsis();
+          var item = document.createElement("li");
+          var active = pageNumber === currentPage;
+          item.className = "page-item" + (active ? " active" : "");
+          var link = document.createElement("a");
+          link.className = "page-link";
+          link.href = "#";
+          link.textContent = String(pageNumber);
+          if (active) {
+            link.setAttribute("aria-current", "page");
+            link.addEventListener("click", function (event) { event.preventDefault(); });
+          } else {
+            link.addEventListener("click", goTo(pageNumber));
+          }
+          item.appendChild(link);
+          list.appendChild(item);
+        });
+        addControl("Sau", currentPage + 1, currentPage === totalPages);
+        addControl("Cuối", totalPages, currentPage === totalPages);
+        container.appendChild(list);
+      }
+
+      function loadContracts(statusName, page) {
+        if (!statusName) {
+          return Promise.all(Object.keys(tabViews).map(function (item) {
+            return loadContracts(item, tabPages[item] || 1);
+          }));
+        }
+        var view = tabViews[statusName];
+        var currentPage = page || 1;
+        tabPages[statusName] = currentPage;
+        return api(contractListUrl(statusName, currentPage), { headers: authHeaders(false) }).then(function (payload) {
+          var rows = (payload && payload.data) || [];
+          var totalPages = payload && payload.total_pages ? payload.total_pages : 0;
+          if (!rows.length && currentPage > 1) return loadContracts(statusName, currentPage - 1);
+          var role = payload && payload.user_role;
+          var showStaff = seesCompany(role);
+          var viewOnly = applyDirectorView(role);
+          showStaffColumn(showStaff);
+          setGroupCount(view.count, payload && payload.total != null ? payload.total : rows.length);
+          renderContractTable(rows, view.body, view.actions && !viewOnly, showStaff, role);
+          renderPagination(totalPages, payload && payload.current_page ? payload.current_page : currentPage, view.pagination, statusName);
+        });
+      }
+
+      function changeStatus(id, status) {
+        var question = status === "Đã thanh toán"
+          ? "Bạn có muốn chuyển hợp đồng này sang trạng thái Đã thanh toán không?"
+          : "Bạn có chắc chắn muốn Hủy hợp đồng đặt cọc này không?";
+        Swal.fire({
+          title: "Xác nhận?",
+          text: question,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: status === "Đã thanh toán" ? "#3085d6" : "#dc3545",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Đồng ý",
+          cancelButtonText: "Hủy"
+        }).then(function (result) {
+          if (!result.isConfirmed) return;
+          var message = document.getElementById("contract-message");
+          api("/api/contracts/" + id + "/status", {
+            method: "PUT",
+            headers: authHeaders(true),
+            body: JSON.stringify({ status: status })
+          }).then(function () {
+            if (message) message.textContent = "Đã cập nhật trạng thái.";
+            return loadContracts();
+          }).catch(function (error) {
+            if (message) message.textContent = error.message;
+          });
+        });
+      }
+
+      function deleteContract(id) {
+        Swal.fire({
+          title: "Xác nhận?",
+          text: "Bạn có chắc chắn muốn XÓA VĨNH VIỄN hợp đồng này khỏi hệ thống không?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#dc3545",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Đồng ý",
+          cancelButtonText: "Hủy"
+        }).then(function (result) {
+          if (!result.isConfirmed) return;
+          var message = document.getElementById("contract-message");
+          api("/api/contracts/" + id, {
+            method: "DELETE",
+            headers: authHeaders(false)
+          }).then(function () {
+            if (message) message.textContent = "Đã xóa hợp đồng.";
+            return loadContracts();
+          }).catch(function (error) {
+            if (message) message.textContent = error.message;
+          });
+        });
+      }
+
+      function openModal() {
+        var modal = document.getElementById("contract-modal");
+        if (modal) modal.classList.add("show");
+      }
+
+      function closeModal() {
+        var modal = document.getElementById("contract-modal");
+        if (modal) modal.classList.remove("show");
+      }
+
+      function setModalTitle(text) {
+        var title = document.getElementById("contract-modal-title");
+        if (title) title.textContent = text;
+      }
+
+      function resetContractForm(depositInput) {
+        var form = document.getElementById("contract-form");
+        if (form) form.reset();
+        var idInput = document.getElementById("contractId");
+        if (idInput) idInput.value = "";
+        setModalTitle("Tạo hợp đồng đặt cọc");
+        if (depositInput && !depositInput.value) depositInput.value = todayIso();
+      }
+
+      function downloadReport(url, exportType) {
+        var message = document.getElementById("contract-message");
+        fetch(url, { headers: authHeaders(false) }).then(function (response) {
+          if (response.status === 401) {
+            expireSession();
+            return null;
+          }
+          if (!response.ok) {
+            return response.json().then(function (data) {
+              throw new Error((data && data.detail) || "Không xuất được báo cáo.");
+            }).catch(function (error) {
+              if (error.message && error.message !== "Không xuất được báo cáo.") throw error;
+              throw new Error("Không xuất được báo cáo.");
+            });
+          }
+          return response.blob();
+        }).then(function (blob) {
+          if (!blob) return;
+          var link = document.createElement("a");
+          var objectUrl = URL.createObjectURL(blob);
+          link.href = objectUrl;
+          link.download = exportType === "nhom" ? "BaoCaoNhom.xlsx" : "BaoCao_KinhDoanh.xlsx";
+          link.style.display = "none";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(objectUrl);
+          if (message) message.textContent = "Đã xuất báo cáo.";
+        }).catch(function (error) {
+          if (message) message.textContent = error.message;
+        });
+      }
+
+      function readStoredUser() {
+        try {
+          return JSON.parse(localStorage.getItem("user"));
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function rememberUser(data) {
+        var currentUser = {
+          id: data.id,
+          full_name: data.full_name || "",
+          role: data.role || "user",
+          nhom: data.nhom || "",
+          chuc_vu: data.chuc_vu || "nhân viên"
+        };
+        localStorage.setItem("user", JSON.stringify(currentUser));
+        return currentUser;
+      }
+
+      function ensureCurrentUser() {
+        var currentUser = readStoredUser();
+        if (currentUser && currentUser.chuc_vu) return Promise.resolve(currentUser);
+        return fetch(API_ORIGIN + "/api/me", { headers: authHeaders(false) }).then(function (response) {
+          if (response.status === 401) {
+            expireSession();
+            return null;
+          }
+          if (!response.ok) throw new Error("Không tải được thông tin tài khoản.");
+          return response.json().then(rememberUser);
+        });
+      }
+
+      function ensureSwal() {
+        if (window.Swal) return Promise.resolve();
+        return new Promise(function (resolve, reject) {
+          var existing = document.querySelector('script[src*="sweetalert2"]');
+          function fail() { reject(new Error("Không tải được hộp thoại xuất báo cáo.")); }
+          if (existing) {
+            existing.addEventListener("load", function () { resolve(); });
+            existing.addEventListener("error", fail);
+            return;
+          }
+          var loader = document.createElement("script");
+          loader.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11";
+          loader.onload = function () { resolve(); };
+          loader.onerror = fail;
+          document.head.appendChild(loader);
+        });
+      }
+
+      function openExportDialog() {
+        ensureSwal().then(function () {
+          return ensureCurrentUser();
+        }).then(function (loadedUser) {
+          if (!loadedUser) return;
+          var currentUser = JSON.parse(localStorage.getItem("user"));
+          var isAdmin = String(currentUser.role || "").toLowerCase() === "admin";
+          var isStaff = currentUser.chuc_vu === "nhân viên" && !isAdmin;
+          var isLeader = currentUser.chuc_vu === "trưởng nhóm";
+          Swal.fire({
+            title: "Xuất báo cáo",
+            html:
+              '<div style="text-align:left;display:grid;gap:0.75rem">' +
+                '<label id="export-personal-option" style="display:flex;gap:0.5rem;align-items:center"><input type="radio" name="export-scope" value="canhan" checked> Xuất báo cáo Cá nhân</label>' +
+                '<label id="export-group-option" style="display:flex;gap:0.5rem;align-items:center"><input type="radio" name="export-scope" value="nhom"> Xuất báo cáo Nhóm</label>' +
+                '<select id="export-nhom" class="input">' +
+                  '<option value="">Chọn nhóm...</option>' +
+                  '<option value="Bạch Dương">Bạch Dương</option>' +
+                  '<option value="Thần Tài">Thần Tài</option>' +
+                  '<option value="Mai Vàng">Mai Vàng</option>' +
+                '</select>' +
+              '</div>',
+            showCancelButton: true,
+            confirmButtonText: "Xuất",
+            cancelButtonText: "Hủy",
+            confirmButtonColor: "#8e0b2c",
+            cancelButtonColor: "#6c757d",
+            didOpen: function () {
+              var personal = document.querySelector('input[name="export-scope"][value="canhan"]');
+              var groupRadio = document.querySelector('input[name="export-scope"][value="nhom"]');
+              var groupOption = document.getElementById("export-group-option");
+              var select = document.getElementById("export-nhom");
+              if (isStaff) {
+                groupOption.style.display = "none";
+                select.style.display = "none";
+                personal.checked = true;
+                groupRadio.disabled = true;
+                return;
+              }
+              if (currentUser.nhom) {
+                if (!select.querySelector('option[value="' + currentUser.nhom + '"]')) {
+                  var extra = document.createElement("option");
+                  extra.value = currentUser.nhom;
+                  extra.textContent = currentUser.nhom;
+                  select.appendChild(extra);
+                }
+                select.value = currentUser.nhom;
+              }
+              if (isLeader) select.disabled = true;
+              document.querySelectorAll('input[name="export-scope"]').forEach(function (radio) {
+                radio.addEventListener("change", function () {
+                  var grouped = document.querySelector('input[name="export-scope"]:checked').value === "nhom";
+                  if (!isLeader) select.disabled = !grouped;
+                  if (!grouped && !isLeader) select.value = "";
+                });
+              });
+              select.disabled = isLeader || document.querySelector('input[name="export-scope"]:checked').value !== "nhom";
+            },
+            preConfirm: function () {
+              var scope = document.querySelector('input[name="export-scope"]:checked').value;
+              if (isStaff) scope = "canhan";
+              return { export_type: scope };
+            }
+          }).then(function (result) {
+            if (!result.isConfirmed || !result.value) return;
+            var yearSelect = document.getElementById("globalYearSelect");
+            var year = yearSelect ? yearSelect.value : String(selectedYear);
+            var exportType = result.value.export_type === "nhom" ? "nhom" : "canhan";
+            selectedYear = Number(year) || selectedYear;
+            var url = API_ORIGIN + "/api/contracts/export?export_type=" + encodeURIComponent(exportType) + "&year=" + encodeURIComponent(year);
+            downloadReport(url, exportType);
+          });
+        }).catch(function (error) {
+          var message = document.getElementById("contract-message");
+          if (message) message.textContent = error.message;
+        });
+      }
+
+      function openCreate(depositInput) {
+        resetContractForm(depositInput);
+        openModal();
+      }
+
+      function isoDate(value) {
+        return value ? String(value).slice(0, 10) : "";
+      }
+
+      function openEdit(row) {
+        var idInput = document.getElementById("contractId");
+        if (idInput) idInput.value = row.id;
+        document.getElementById("buyer-name").value = row.buyer_name || "";
+        document.getElementById("seller-name").value = row.seller_name || "";
+        document.getElementById("land-address").value = row.land_address || "";
+        document.getElementById("contract-quantity").value = row.contract_quantity || 1;
+        document.getElementById("lam-tu").value = row.lam_tu || "Chính chủ";
+        document.getElementById("nguon").value = row.nguon || "Nguồn cung";
+        document.getElementById("sale-price").value = formatThousands(row.sale_price);
+        document.getElementById("commission").value = formatThousands(row.commission);
+        document.getElementById("deposit-date").value = isoDate(row.deposit_date);
+        document.getElementById("ngay-thanh-toan").value = isoDate(row.ngay_thanh_toan);
+        setModalTitle("Cập nhật hợp đồng");
+        openModal();
+      }
+
+      function bootContracts() {
+        var contractForm = document.getElementById("contract-form");
+        if (!contractForm || contractForm.dataset.bound === "1") return;
+        contractForm.dataset.bound = "1";
+        var depositInput = document.getElementById("deposit-date");
+        if (depositInput && !depositInput.value) depositInput.value = todayIso();
+        bindMoneyInput(document.getElementById("sale-price"));
+        bindMoneyInput(document.getElementById("commission"));
+
+        if (contractForm) {
+          contractForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var message = document.getElementById("contract-message");
+            var contractId = document.getElementById("contractId").value;
+            var payload = {
+              buyer_name: document.getElementById("buyer-name").value,
+              seller_name: document.getElementById("seller-name").value,
+              land_address: document.getElementById("land-address").value,
+              contract_quantity: Number(document.getElementById("contract-quantity").value || 1),
+              sale_price: moneyToNumber(document.getElementById("sale-price").value),
+              commission: moneyToNumber(document.getElementById("commission").value),
+              lam_tu: document.getElementById("lam-tu").value,
+              nguon: document.getElementById("nguon").value,
+              deposit_date: document.getElementById("deposit-date").value,
+              ngay_thanh_toan: document.getElementById("ngay-thanh-toan").value
+            };
+            var editing = Boolean(contractId);
+            api(editing ? "/api/contracts/" + contractId : "/api/contracts", {
+              method: editing ? "PUT" : "POST",
+              headers: authHeaders(true),
+              body: JSON.stringify(payload)
+            }).then(function () {
+              resetContractForm(depositInput);
+              closeModal();
+              if (message) message.textContent = editing ? "Đã cập nhật hợp đồng." : "Đã tạo hợp đồng đặt cọc.";
+              return loadContracts();
+            }).catch(function (error) {
+              if (message) message.textContent = error.message;
+            });
+          });
+        }
+
+        var tabList = document.getElementById("contract-tabs");
+        if (tabList) {
+          tabList.addEventListener("click", function (event) {
+            var button = event.target.closest(".nav-link");
+            if (!button) return;
+            var paneId = button.getAttribute("data-tab");
+            var statusByPane = {
+              "pane-dat-coc": "Đặt cọc",
+              "pane-thanh-toan": "Đã thanh toán",
+              "pane-huy": "Hủy"
+            };
+            tabList.querySelectorAll(".nav-link").forEach(function (link) {
+              var selected = link === button;
+              link.classList.toggle("active", selected);
+              link.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+            document.querySelectorAll("#contract-tab-content .tab-pane").forEach(function (pane) {
+              pane.classList.toggle("show", pane.id === paneId);
+              pane.classList.toggle("active", pane.id === paneId);
+            });
+            var statusName = statusByPane[paneId];
+            if (statusName) {
+              tabPages[statusName] = 1;
+              loadContracts(statusName, 1).catch(function (error) {
+                var message = document.getElementById("contract-message");
+                if (message) message.textContent = error.message;
+              });
+            }
+          });
+        }
+
+        initYearSelect();
+        var storedRole = localStorage.getItem("user_role") || "";
+        if (!storedRole) {
+          var storedUser = readStoredUser();
+          storedRole = storedUser && storedUser.chuc_vu ? storedUser.chuc_vu : "";
+        }
+        applyDirectorView(storedRole);
+        var openButton = document.getElementById("btnCreateContract");
+        var closeButton = document.getElementById("close-contract");
+        var cancelButton = document.getElementById("cancel-contract");
+        var modal = document.getElementById("contract-modal");
+        if (openButton) openButton.addEventListener("click", function () { openCreate(depositInput); });
+        var exportButton = document.getElementById("btnExportExcel");
+        if (exportButton) exportButton.addEventListener("click", openExportDialog);
+        if (closeButton) closeButton.addEventListener("click", closeModal);
+        if (cancelButton) cancelButton.addEventListener("click", closeModal);
+        if (modal) {
+          modal.addEventListener("click", function (event) {
+            if (event.target === modal) closeModal();
+          });
+        }
+
+        loadContracts().catch(function (error) {
+          var message = document.getElementById("contract-message");
+          if (message) message.textContent = error.message;
+        });
+      }
+      window.bootContracts = bootContracts;
+
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootContracts);
+      else bootContracts();
+    })();
+  </script>
+</body>
+</html>

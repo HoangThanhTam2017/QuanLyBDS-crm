@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <title>Kho Nguồn Cung · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <!-- Topbar giữ nguyên hệ thống nội bộ -->
+  <header id="topbar">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+      <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+        <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+        <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+        <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+      </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </a>
+      <div id="userInfoWrapper">
+        <div id="topbarUserName">Đang tải...</div>
+        <div id="topbarUserEmail"></div>
+      </div>
+      <button id="btnLogout" class="logout-btn" type="button">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span class="logout-label">Đăng xuất</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="backdrop"></div>
+
+  <div id="shell" class="d-flex">
+    <!-- Sidebar giữ nguyên các phân hệ -->
+    <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+      <nav class="sidebar-nav" aria-label="Menu chính">
+        <p class="nav-section">Phân hệ</p>
+        <button type="button" class="nav-link" data-go="dashboard" data-label="Tổng quan">
+          <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+          <span class="nav-label">Tổng quan</span>
+        </button>
+        <a class="nav-link is-active no-underline" href="properties.html" data-go="supply" data-label="Nguồn cung" aria-current="page">
+          <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+          <span class="nav-label">Nguồn cung</span>
+        </a>
+        <a id="navPendingPosts" class="nav-link no-underline" href="pending-posts.html" data-go="pending" data-label="Bài chờ duyệt">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+          <span class="nav-label">Bài chờ duyệt</span>
+        </a>
+        <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+          <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          <span class="nav-label">Tra cứu giá đất</span>
+        </a>
+        <a id="navManageUsers" class="nav-link no-underline" href="users.html" data-go="staff" data-label="Quản lý nhân viên">
+          <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+          <span class="nav-label">Quản lý nhân viên</span>
+        </a>
+        <a class="nav-link no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh">
+          <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+          <span class="nav-label">Hợp đồng Kinh doanh</span>
+        </a>
+        <a class="nav-link no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê">
+          <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+          <span class="nav-label">Báo cáo Thống kê</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+    </aside>
+    <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+    <!-- Nội dung chính: bài viết bên trái, bộ lọc bên phải -->
+    <div id="main-content">
+      <nav aria-label="Đường dẫn" class="sticky top-16 z-30 -mx-4 -mt-6 mb-4 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:-mx-6 sm:-mt-7 lg:-mx-8 lg:-mt-8">
+        <ol class="flex items-center gap-2">
+          <li>
+            <a href="dashboard.html" data-go="dashboard" class="inline-flex items-center gap-1.5 transition hover:text-[#155cc0]">
+              <i class="fa-solid fa-home" aria-hidden="true"></i>
+              <span>Tổng quan</span>
+            </a>
+          </li>
+          <li class="text-[10px] text-gray-400" aria-hidden="true">
+            <i class="fa-solid fa-chevron-right"></i>
+          </li>
+          <li class="font-medium text-gray-800" aria-current="page">Kho Nguồn Cung</li>
+        </ol>
+      </nav>
+
+      <h1 class="mb-4 text-xl font-bold text-gray-900">Kho Nguồn Cung</h1>
+
+      <style>
+        .properties-board { overflow: visible; }
+        .filter-drawer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+        .filter-drawer-inner { min-height: 0; overflow: hidden; }
+        .filter-drawer.is-open { grid-template-rows: 1fr; }
+        .filter-panel { padding-top: 0 !important; }
+        .filter-sidebar { align-self: flex-start; }
+        @media (max-width: 767.98px) {
+          #feed-stats {
+            overflow-x: hidden;
+            min-width: 0;
+            gap: 0.25rem !important;
+          }
+          #feed-stats > div,
+          #feed-stats .text-base {
+            font-size: 0.65rem !important;
+            line-height: 1.15 !important;
+          }
+          #feed-stats > div {
+            flex: 1 1 0;
+            min-width: 0;
+            justify-content: center;
+          }
+        }
+        @media (min-width: 768px) {
+          #feed-stats {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            justify-content: flex-end !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            width: 100% !important;
+            padding: 15px 1.5rem 15px 0 !important;
+            overflow: visible !important;
+            font-size: 0.875rem !important;
+            line-height: 1.25rem !important;
+            color: #374151 !important;
+            white-space: normal !important;
+          }
+          #feed-stats > div {
+            flex: 0 0 auto !important;
+            min-width: 0;
+            justify-content: flex-start !important;
+            padding: 0 !important;
+            font-size: 0.875rem !important;
+            line-height: 1.25rem !important;
+            font-weight: 400 !important;
+            white-space: normal !important;
+            background: transparent !important;
+          }
+          #feed-stats .text-base {
+            font-size: 1rem !important;
+            line-height: 1.5rem !important;
+            font-weight: 700 !important;
+          }
+          .filter-drawer { display: block; }
+          .filter-drawer-inner { overflow: visible; }
+          #open-filters { display: none !important; }
+        }
+        @media (min-width: 1024px) {
+          .filter-drawer { display: block; }
+          .filter-drawer-inner { overflow: visible; }
+          .filter-panel { padding: 0 !important; }
+          .filter-sidebar {
+            position: -webkit-sticky;
+            position: sticky;
+            top: calc(var(--topbar, 4rem) + 73px);
+            z-index: 20;
+            align-self: flex-start;
+            max-height: calc(100vh - var(--topbar, 4rem) - 40px);
+            overflow-y: auto;
+          }
+        }
+      </style>
+      <div class="properties-board grid w-full grid-cols-1 gap-5 lg:grid-cols-10">
+        <!-- Bộ lọc: trên cùng khi xem điện thoại, cột phải 30% khi màn hình lớn -->
+        <aside class="filter-sidebar lg:col-span-3 lg:col-start-8 lg:row-start-1" aria-label="Bộ lọc nguồn cung">
+            <form id="filter-form" class="lg:rounded-lg lg:bg-white lg:p-4 lg:shadow-sm lg:ring-1 lg:ring-black/5">
+              <h2 class="mb-2 hidden text-base font-bold text-gray-900 lg:block">Tìm kiếm &amp; lọc</h2>
+              <div class="mb-2 flex items-center gap-2 lg:block">
+                <div class="relative min-w-0 flex-1">
+                  <label class="mb-1 hidden text-xs font-medium text-gray-500 lg:block" for="filter-address">Vị trí / Địa chỉ lô đất</label>
+                  <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 lg:hidden" aria-hidden="true"></i>
+                  <input id="filter-address" name="address" type="search" placeholder="Tìm vị trí, địa chỉ..." class="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#155cc0] focus:ring-2 focus:ring-[#155cc0]/20 lg:rounded-lg lg:bg-gray-50 lg:px-3 lg:py-2.5">
+                </div>
+                <button type="button" id="open-filters" class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#8e0b2c] bg-white px-3 py-2.5 text-sm font-semibold text-[#8e0b2c] lg:hidden" aria-expanded="false" aria-controls="filter-drawer">
+                  <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                  Bộ lọc
+                </button>
+              </div>
+              <div id="filter-drawer" class="filter-drawer">
+                <div class="filter-drawer-inner">
+                  <div class="filter-panel rounded-lg bg-white p-4 shadow-sm ring-1 ring-black/5 lg:bg-transparent lg:shadow-none lg:ring-0">
+                    <div class="mb-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-500">Số thửa đất / Số tờ bản đồ</label>
+                      <div class="d-flex gap-2">
+                        <input type="text" id="filterSoThua" placeholder="Số thửa..." aria-label="Số thửa đất" class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                        <input type="text" id="filterSoTo" placeholder="Số tờ..." aria-label="Số tờ bản đồ" class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                      </div>
+                    </div>
+                    <div class="mb-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-500" for="filter-user">Tên người đăng</label>
+                      <select id="filter-user" name="user" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                        <option value="">Tất cả</option>
+                      </select>
+                    </div>
+                    <div class="mb-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-500" for="filter-price">Khoảng giá</label>
+                      <select id="filter-price" name="price" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                        <option value="">Tất cả</option>
+                        <option value="0-1000000000">Dưới 1 tỷ</option>
+                        <option value="1000000000-3000000000">1 - 3 tỷ</option>
+                        <option value="3000000000-5000000000">3 - 5 tỷ</option>
+                        <option value="5000000000-999999999999">Trên 5 tỷ</option>
+                      </select>
+                    </div>
+                    <div class="mb-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-500" for="filter-direction">Hướng</label>
+                      <select id="filter-direction" name="direction" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                        <option value="">Tất cả</option>
+                        <option value="Đông">Đông</option>
+                        <option value="Tây">Tây</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Bắc">Bắc</option>
+                        <option value="Đông Nam">Đông Nam</option>
+                        <option value="Tây Nam">Tây Nam</option>
+                        <option value="Đông Bắc">Đông Bắc</option>
+                        <option value="Tây Bắc">Tây Bắc</option>
+                      </select>
+                    </div>
+                    <div class="mb-2">
+                      <label class="mb-1 block text-xs font-medium text-gray-500" for="filter-status">Trạng thái</label>
+                      <select id="filter-status" name="status" class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+                        <option value="">Tất cả</option>
+                        <option>Chưa bán</option>
+                        <option>Dừng bán</option>
+                        <option>Đã bán</option>
+                      </select>
+                    </div>
+                    <div class="mt-3 flex w-full gap-3">
+                      <button type="button" id="clear-filters" class="btn btn-primary w-full justify-center px-4 py-2 text-center">
+                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                        Hủy lọc
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+        </aside>
+
+        <!-- Danh sách bài viết: dưới bộ lọc trên điện thoại, cột trái 70% khi màn hình lớn -->
+        <section class="min-w-0 lg:col-span-7 lg:col-start-1 lg:row-start-1">
+        <!-- Khung tạo tin, bấm vào để mở modal -->
+        <div class="sticky top-[6.75rem] z-20 mb-0 bg-white/95 shadow-sm backdrop-blur">
+        <button id="open-composer" type="button" class="flex w-full items-center gap-3 rounded-lg bg-white p-4 text-left shadow-sm ring-1 ring-black/5 transition hover:bg-gray-50">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#8e0b2c] text-sm font-bold text-white">NT</span>
+          <span class="flex-1 rounded-full bg-gray-100 px-4 py-3 text-sm text-gray-500">Đăng nguồn cung mới...</span>
+          <i class="fa-regular fa-image text-lg text-[#155cc0]" aria-hidden="true"></i>
+        </button>
+        </div>
+
+        <div id="feed-stats" class="flex justify-end items-center flex-wrap gap-4 py-[15px] pr-6 text-sm text-gray-700 d-flex justify-content-between flex-nowrap w-100 gap-1 px-1 py-1 gap-md-3 justify-content-md-end flex-md-wrap" aria-label="Thống kê nguồn cung">
+          <div class="flex items-center gap-1 text-nowrap"><span class="text-gray-500">Tổng số:</span> <span id="stat-total" class="text-base font-bold text-blue-600">0</span></div>
+          <div class="flex items-center gap-1 text-nowrap"><span class="text-gray-500">Chưa bán:</span> <span id="stat-available" class="text-base font-bold text-green-600">0</span></div>
+          <div class="flex items-center gap-1 text-nowrap"><span class="text-gray-500">Đã bán:</span> <span id="stat-sold" class="text-base font-bold text-red-600">0</span></div>
+          <div class="flex items-center gap-1 text-nowrap"><span class="text-gray-500">Dừng bán:</span> <span id="stat-paused" class="text-base font-bold text-yellow-600">0</span></div>
+        </div>
+
+        <span class="hidden h-48 h-96 mt-3 rounded-lg bg-gray-100 grid h-full gap-1 grid-cols-1 grid-cols-2 grid-rows-2 row-span-2 min-h-0 object-cover object-contain bg-black relative z-10 pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-bold text-white line-clamp-2 overflow-hidden top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 w-full cursor-pointer hover:bg-red-600 opacity-80 hover:opacity-100" aria-hidden="true"></span>
+        <div id="feed" class="mt-0 space-y-4">
+          <p id="feed-status" class="rounded-lg bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm ring-1 ring-black/5">Đang tải nguồn cung...</p>
+        </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal thêm bất động sản -->
+  <div id="property-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <button type="button" id="modal-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="modal-title" class="text-lg font-bold text-gray-900">Đăng nguồn cung mới</h2>
+        <button type="button" id="close-modal" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form id="property-form" class="max-h-[80vh] space-y-3 overflow-y-auto p-4">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="label" for="property-so-thua">Số thửa đất</label>
+            <input id="property-so-thua" name="so_thua" type="text" class="input" autocomplete="off" placeholder="Ví dụ: 45">
+          </div>
+          <div>
+            <label class="label" for="property-so-to">Số tờ bản đồ</label>
+            <input id="property-so-to" name="so_to" type="text" class="input" autocomplete="off" placeholder="Ví dụ: 12">
+          </div>
+        </div>
+        <div id="duplicate-warning" class="is-hidden rounded-lg bg-yellow-100 px-3 py-2 text-sm font-semibold text-red-600" role="alert"></div>
+        <div>
+          <label class="label" for="property-content">Nội dung bài viết</label>
+          <textarea id="property-content" name="content" class="input h-80 py-2 text-sm leading-relaxed" required placeholder="Điền tiếp sau dấu hai chấm của từng mục"></textarea>
+        </div>
+        <div>
+          <label class="label" for="media_upload">Ảnh / video</label>
+          <input type="file" id="media_upload" name="media_files" accept="image/*, video/*" multiple class="block w-full cursor-pointer rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#8e0b2c] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#720924]">
+          <p class="mt-1 text-xs text-gray-500">Chọn nhiều ảnh và video trong cùng một lần. Nếu có nhiều video, hệ thống lấy video đầu tiên.</p>
+          <div id="media-preview" class="mt-3 grid grid-cols-3 gap-2"></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="cancel-modal" class="btn btn-secondary">Hủy</button>
+          <button type="submit" id="submit-property" class="btn btn-primary disabled:cursor-not-allowed disabled:opacity-45">Đăng tin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal cập nhật trạng thái bài viết -->
+  <div id="edit-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <button type="button" id="edit-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="edit-title" class="text-lg font-bold text-gray-900">Cập nhật bài viết</h2>
+        <button type="button" id="close-edit" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form id="edit-form" class="max-h-[80vh] space-y-3 overflow-y-auto p-4">
+        <div>
+          <label class="label" for="edit-content">Nội dung bài viết</label>
+          <textarea id="edit-content" name="content" class="input h-80 py-2 text-sm leading-relaxed" required></textarea>
+        </div>
+        <div>
+          <label class="label" for="edit-status">Trạng thái</label>
+          <select id="edit-status" name="status" class="input">
+            <option>Chưa bán</option>
+            <option>Dừng bán</option>
+            <option>Đã bán</option>
+          </select>
+        </div>
+        <div>
+          <p class="label">Media hiện có</p>
+          <div id="edit-media" class="grid grid-cols-3 gap-2"></div>
+        </div>
+        <div>
+          <label class="label" for="edit_media_upload">Thêm ảnh / video</label>
+          <input type="file" id="edit_media_upload" name="media_files" accept="image/*, video/*" multiple class="block w-full cursor-pointer rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#8e0b2c] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#720924]">
+          <p class="mt-1 text-xs text-gray-500">Chọn nhiều ảnh và video trong cùng một lần. Nếu có nhiều video, hệ thống lấy video đầu tiên.</p>
+          <div id="edit-upload-preview" class="mt-3 grid grid-cols-3 gap-2"></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="cancel-edit" class="btn btn-secondary">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="prepare-modal" class="is-hidden fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="prepare-title">
+    <button type="button" id="prepare-backdrop" class="absolute inset-0 bg-slate-900/50" aria-label="Đóng hộp thoại"></button>
+    <div class="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <h2 id="prepare-title" class="text-lg font-bold text-gray-900">Chuẩn bị đăng bài</h2>
+        <button type="button" id="close-prepare" class="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="max-h-[80vh] space-y-3 overflow-y-auto p-4">
+        <div>
+          <label class="label" for="prepare-content">Nội dung bài viết</label>
+          <textarea id="prepare-content" class="input h-80 py-2 text-sm leading-relaxed"></textarea>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label class="sr-only" for="post-writing-style">Style bán hàng</label>
+          <select id="post-writing-style" class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#155cc0] focus:bg-white focus:ring-2 focus:ring-[#155cc0]/20">
+            <option value="auto">🪄 Tự động (AI tự phân tích)</option>
+            <option value="urgent">🚨 Bán gấp / Cắt lỗ</option>
+            <option value="invest">💰 Đầu tư / Dòng tiền</option>
+            <option value="living">🏡 An cư / Ở thực</option>
+          </select>
+          <button type="button" id="ai-compose" class="btn btn-primary shrink-0">Tạo nội dung AI</button>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="cancel-prepare" class="btn btn-secondary">Hủy</button>
+          <button type="button" id="confirm-prepare" class="btn btn-primary">Xác nhận Copy &amp; Tải ảnh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="is-hidden" role="dialog" aria-modal="true" aria-label="Ảnh phóng to">
+    <div id="lightbox-stage">
+      <img id="lightbox-image" alt="Ảnh phóng to" draggable="false">
+    </div>
+    <div id="lightbox-toolbar">
+      <p id="lightbox-counter" aria-live="polite">1 / 1</p>
+      <div id="lightbox-actions">
+        <button type="button" id="download-lightbox" aria-label="Tải ảnh về">
+          <i class="fas fa-download" aria-hidden="true"></i>
+        </button>
+        <button type="button" id="close-lightbox" aria-label="Đóng">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+    <button type="button" id="lightbox-prev" aria-label="Ảnh trước" hidden>
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+    <button type="button" id="lightbox-next" aria-label="Ảnh sau" hidden>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>
+    <div id="lightbox-thumbs" aria-label="Ảnh thu nhỏ"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/pending-posts.js?v=admin-only"></script>
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script>
+    (function () {
+      document.getElementById("btnLogout").addEventListener("click", function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        window.location.replace("index.html");
+      });
+
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>

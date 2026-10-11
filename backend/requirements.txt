@@ -1,0 +1,10 @@
+fastapi
+python-multipart
+uvicorn
+sqlalchemy
+pymysql
+python-jose[cryptography]
+openai
+requests
+pandas
+openpyxl

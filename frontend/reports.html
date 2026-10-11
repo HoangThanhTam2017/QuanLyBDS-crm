@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      function leaveIfLoggedOut() {
+        if (localStorage.getItem("accessToken")) return;
+        document.documentElement.hidden = true;
+        window.location.replace("index.html");
+      }
+      leaveIfLoggedOut();
+      window.addEventListener("pageshow", function () {
+        leaveIfLoggedOut();
+      });
+    })();
+  </script>
+  <meta name="theme-color" content="#8e0b2c">
+  <title>Báo cáo Thống kê · Thành Tâm Hà Tĩnh</title>
+  <link rel="icon" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style id="sidebar-critical">
+    #sidebar.sidebar-container{position:fixed;top:4rem;left:0;width:16rem;height:calc(100vh - 4rem);overflow-y:auto;z-index:40;background:#fff;box-sizing:border-box;transform:translateX(-100%)}
+    #sidebar.sidebar-container.is-open,#sidebar.sidebar-container.show{transform:translateX(0);z-index:1050}
+    #main-content{margin-left:0}
+    @media (min-width:768px){
+      #sidebar.sidebar-container{transform:none}
+      #main-content{margin-left:16rem}
+      #sidebar.sidebar-container.is-collapsed{width:5.25rem}
+      #sidebar.sidebar-container.is-collapsed ~ #main-content{margin-left:5.25rem}
+    }
+    #sidebar.sidebar-container .sidebar-nav,#sidebar.sidebar-container .sidebar-foot{opacity:0;visibility:hidden}
+    #sidebar.sidebar-container.is-ready .sidebar-nav,#sidebar.sidebar-container.is-ready .sidebar-foot{visibility:visible;opacity:1;transition:opacity .2s ease}
+  </style>
+  <script>
+    (function () {
+      function isSystemAdmin() {
+        var label = String(localStorage.getItem("user_role") || "").trim().toLowerCase();
+        if (label === "admin") return true;
+        var user = null;
+        try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (error) { user = null; }
+        if (!user) return false;
+        return String(user.role || "").trim().toLowerCase() === "admin" || String(user.chuc_vu || "").trim().toLowerCase() === "admin";
+      }
+      function hideAdminOnlyModules() {
+        var hide = !isSystemAdmin();
+        ["cardPendingPosts", "cardManageUsers", "navPendingPosts", "navManageUsers"].forEach(function (id) {
+          var node = document.getElementById(id);
+          if (!node) return;
+          var next = hide ? "none" : "";
+          if (node.style.display !== next) node.style.display = next;
+        });
+      }
+      function bootSidebarOnce() {
+        if (window.__sidebarBooted) return;
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar) return;
+        window.__sidebarBooted = true;
+        hideAdminOnlyModules();
+        sidebar.classList.add("is-ready");
+      }
+      window.isSystemAdmin = isSystemAdmin;
+      window.hideAdminOnlyModules = hideAdminOnlyModules;
+      window.bootSidebarOnce = bootSidebarOnce;
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css?v=sticky-fix">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#8e0b2c",
+            secondary: "#155cc0",
+            canvas: "#f3f4f6"
+          },
+          fontFamily: {
+            sans: ["Inter", "Roboto", "Segoe UI", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <header id="topbar">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+      <button id="sidebar-toggle" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Mở menu">
+        <i id="icon-menu" class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+        <i id="icon-close" class="fa-solid fa-xmark text-lg is-hidden" aria-hidden="true"></i>
+      </button>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight sm:text-base">Công ty cổ phần Thành Tâm Hà Tĩnh</p>
+        <p class="mt-0.5 hidden truncate text-[11px] text-white/75 sm:block">Hệ thống quản lý bất động sản nội bộ</p>
+      </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="dashboard.html#settings" class="icon-btn" id="btnSettings" title="Cài đặt hệ thống">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </a>
+      <div id="userInfoWrapper">
+        <div id="topbarUserName">Đang tải...</div>
+        <div id="topbarUserEmail"></div>
+      </div>
+      <button id="btnLogout" class="logout-btn" type="button">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span class="logout-label">Đăng xuất</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="backdrop"></div>
+
+  <div id="shell" class="d-flex">
+    <aside id="sidebar" class="sidebar-container" aria-label="Thanh điều hướng">
+      <nav class="sidebar-nav" aria-label="Menu chính">
+        <p class="nav-section">Phân hệ</p>
+        <button type="button" class="nav-link" data-go="dashboard" data-label="Tổng quan">
+          <span class="nav-icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+          <span class="nav-label">Tổng quan</span>
+        </button>
+        <a class="nav-link no-underline" href="properties.html" data-go="supply" data-label="Nguồn cung">
+          <span class="nav-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+          <span class="nav-label">Nguồn cung</span>
+        </a>
+        <a id="navPendingPosts" class="nav-link no-underline" href="pending-posts.html" data-go="pending" data-label="Bài chờ duyệt">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+          <span class="nav-label">Bài chờ duyệt</span>
+        </a>
+        <a class="nav-link no-underline" href="land-prices.html" data-go="price" data-label="Tra cứu giá đất">
+          <span class="nav-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          <span class="nav-label">Tra cứu giá đất</span>
+        </a>
+        <a id="navManageUsers" class="nav-link no-underline" href="users.html" data-go="staff" data-label="Quản lý nhân viên">
+          <span class="nav-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+          <span class="nav-label">Quản lý nhân viên</span>
+        </a>
+        <a class="nav-link no-underline" href="contracts.html" data-go="contracts" data-label="Hợp đồng Kinh doanh">
+          <span class="nav-icon"><i class="fa-solid fa-file-contract" aria-hidden="true"></i></span>
+          <span class="nav-label">Hợp đồng Kinh doanh</span>
+        </a>
+        <a class="nav-link is-active active no-underline" href="reports.html" data-go="reports" data-label="Báo cáo Thống kê" aria-current="page">
+          <span class="nav-icon"><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></span>
+          <span class="nav-label">Báo cáo Thống kê</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">Phiên bản nội bộ 1.0</div>
+    </aside>
+    <script>if (window.bootSidebarOnce) window.bootSidebarOnce();</script>
+
+    <div id="main-content">
+      <style>
+        #report-page { color: #111827; }
+        #report-page .filter-bar .form-label { margin-bottom: 0; white-space: nowrap; }
+        #report-page .filter-bar .form-select { width: auto; min-width: 9.5rem; }
+        #report-page #viewModeToggle {
+          overflow: hidden;
+          background: #fff;
+        }
+        #report-page #viewModeToggle .btn {
+          height: 2.5rem;
+          padding: 0 1rem;
+          border: 1px solid #8e0b2c;
+          border-radius: 0;
+          background: #fff;
+          color: #8e0b2c;
+          font-weight: 600;
+          box-shadow: none;
+          white-space: nowrap;
+        }
+        #report-page #viewModeToggle label.btn:last-of-type { margin-left: -1px; }
+        #report-page #viewModeToggle .btn-check:checked + .btn {
+          background: #8e0b2c;
+          border-color: #8e0b2c;
+          color: #fff;
+        }
+        #report-page #viewModeToggle .btn-check:checked + .btn:hover {
+          background: #720924;
+          border-color: #720924;
+          color: #fff;
+        }
+        #report-page #viewModeToggle .btn-check:not(:checked) + .btn:hover {
+          background: #fdf2f4;
+          color: #8e0b2c;
+        }
+        #report-page .card {
+          height: 100%;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 1rem;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        #report-page .card-header {
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #e5e7eb;
+          font-weight: 700;
+        }
+        #report-page .card-body { padding: 1.25rem; }
+        #report-page .kpi-card { border-top: 4px solid transparent; }
+        #report-page .kpi-revenue { border-top-color: #15803d; }
+        #report-page .kpi-success { border-top-color: #155cc0; }
+        #report-page .kpi-cancel { border-top-color: #b91c1c; }
+        #report-page .kpi-network { border-top-color: #d97706; }
+        #report-page .kpi-label {
+          margin: 0;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #6b7280;
+        }
+        #report-page .kpi-value {
+          margin: 0.35rem 0 0;
+          font-size: 1.28rem;
+          font-weight: 800;
+          line-height: 1.2;
+          letter-spacing: -0.03em;
+          white-space: nowrap;
+        }
+        #report-page .kpi-revenue .kpi-value { color: #15803d; }
+        #report-page .kpi-success .kpi-value { color: #155cc0; }
+        #report-page .kpi-cancel .kpi-value { color: #b91c1c; }
+        #report-page .kpi-network .kpi-value { color: #b45309; }
+        #report-page .kpi-note { margin: 0.35rem 0 0; color: #6b7280; font-size: 0.8rem; }
+        #report-page .form-label { display: block; margin-bottom: 0.35rem; font-size: 0.85rem; font-weight: 700; }
+        #report-page .form-select {
+          width: 100%;
+          height: 2.5rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.7rem;
+          background: #fff;
+          padding: 0 0.75rem;
+        }
+        #report-page .chart-card { max-height: 350px; overflow: hidden; }
+        #report-page .chart-card .card-body { padding: 0.75rem 1rem 1rem; }
+        #report-page .chart-box { position: relative; height: 220px; max-height: 220px; }
+        #report-page .chart-box canvas { max-height: 220px; }
+        #report-page .table-responsive { width: 100%; }
+        #report-page table.data { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        #report-page table.data th, #report-page table.data td {
+          padding: 0.75rem 0.85rem;
+          border-bottom: 1px solid #f3f4f6;
+          text-align: left;
+          vertical-align: middle;
+        }
+        #report-page table.table-sm th, #report-page table.table-sm td { padding: 0.3rem 0.45rem; }
+        #report-page table.rank-table { width: 100%; min-width: 0; table-layout: auto; }
+        #report-page table.rank-table th:first-child,
+        #report-page table.rank-table td:first-child { white-space: nowrap; }
+        #report-page table.rank-table .text-nowrap { white-space: nowrap; }
+        #report-page table.rank-table .text-end { text-align: right; }
+        #report-page #filterGroupBlock,
+        #report-page #filterEmployeeBlock { align-items: center; gap: 0.75rem; }
+        #report-page #filterTeam,
+        #report-page #filterEmployee { min-width: 12rem; }
+        #report-page table.data th {
+          font-size: 0.72rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #6b7280;
+          white-space: nowrap;
+        }
+        @media (max-width: 767.98px) {
+          #report-page .report-period {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+          }
+          #report-page .report-period .form-select {
+            width: auto;
+            min-width: 0;
+            flex: 1 1 0;
+            height: 2rem;
+            padding: 0 1.5rem 0 0.55rem;
+            font-size: 0.8125rem;
+          }
+        }
+        @media (max-width: 767.98px) {
+          #report-page #viewModeWrap { width: 100%; }
+          #report-page #viewModeWrap:has(#viewModeToggle[style*="display: none"]) {
+            display: none !important;
+          }
+        }
+        @media (min-width: 768px) {
+          #report-page .report-period { display: contents !important; }
+          #report-page .filter-bar .form-select { font-size: 1rem; }
+          #report-page #viewModeWrap { display: contents !important; }
+        }
+      </style>
+
+      <div id="report-page">
+        <nav aria-label="Đường dẫn" class="mb-4 text-sm text-gray-500">
+          <ol class="flex items-center gap-2">
+            <li>
+              <a href="dashboard.html" data-go="dashboard" class="inline-flex items-center gap-1.5 transition hover:text-[#155cc0]">
+                <i class="fa-solid fa-home" aria-hidden="true"></i>
+                <span>Tổng quan</span>
+              </a>
+            </li>
+            <li class="text-[10px] text-gray-400" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></li>
+            <li class="font-medium text-gray-800" aria-current="page">Báo cáo Thống kê</li>
+          </ol>
+        </nav>
+
+        <div class="mb-2">
+          <h1 class="text-2xl font-bold text-gray-900">Báo cáo Thống kê</h1>
+          <p class="mt-1 text-sm text-gray-500 d-none d-md-block">Doanh thu, tỷ lệ hợp đồng và bảng xếp hạng theo năm hoặc tháng.</p>
+        </div>
+        <p id="report-message" class="mb-2 text-sm text-gray-500"></p>
+
+        <div class="d-flex flex-wrap gap-3 align-items-center mb-4 filter-bar">
+          <div class="report-period d-flex gap-2 align-items-center">
+            <label class="form-label d-none d-md-block" for="report-year">Năm</label>
+            <select id="report-year" class="form-select form-select-sm" aria-label="Năm"></select>
+            <label class="form-label d-none d-md-block" for="report-month">Tháng</label>
+            <select id="report-month" class="form-select form-select-sm" aria-label="Tháng">
+              <option value="">Tất cả các tháng</option>
+            </select>
+          </div>
+          <div id="filterGroupBlock" style="display: none;">
+            <label class="form-label" for="filterTeam">Nhóm</label>
+            <select id="filterTeam" class="form-select">
+              <option value="">-- Tất cả nhóm --</option>
+            </select>
+          </div>
+          <div id="filterEmployeeBlock" style="display: none;">
+            <label class="form-label" for="filterEmployee">Nhân viên</label>
+            <select id="filterEmployee" class="form-select">
+              <option value="">-- Tất cả nhân viên --</option>
+            </select>
+          </div>
+          <div id="viewModeWrap" class="d-flex justify-content-center justify-content-md-start align-items-center my-2 my-md-0">
+            <div id="viewModeToggle" class="btn-group rounded-pill" role="group" aria-label="Phạm vi dữ liệu" style="display: none;">
+              <input class="btn-check" type="radio" name="viewMode" id="modePersonal" value="personal" autocomplete="off" checked>
+              <label class="btn btn-outline-primary" for="modePersonal"><i class="fa-solid fa-user me-1" aria-hidden="true"></i>Cá nhân</label>
+              <input class="btn-check" type="radio" name="viewMode" id="modeGroup" value="group" autocomplete="off">
+              <label class="btn btn-outline-primary" for="modeGroup"><i class="fa-solid fa-users me-1" aria-hidden="true"></i>Toàn Nhóm</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="card kpi-card kpi-revenue">
+              <div class="card-body">
+                <p class="kpi-label">Doanh thu</p>
+                <p id="kpi-doanh-thu" class="kpi-value">0 đ</p>
+                <p class="kpi-note">Tổng hoa hồng đã thanh toán</p>
+              </div>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="card kpi-card kpi-success">
+              <div class="card-body">
+                <p class="kpi-label">Thành công</p>
+                <p id="kpi-thanh-cong" class="kpi-value">0</p>
+                <p class="kpi-note">Hợp đồng đã thanh toán</p>
+              </div>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="card kpi-card kpi-cancel">
+              <div class="card-body">
+                <p class="kpi-label">Hủy</p>
+                <p id="kpi-huy" class="kpi-value">0</p>
+                <p id="kpi-huy-rate" class="kpi-note">Tỷ lệ rớt 0%</p>
+              </div>
+            </article>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <article class="card kpi-card kpi-network">
+              <div class="card-body">
+                <p class="kpi-label">Sức mạnh mạng lưới</p>
+                <p id="kpi-nguon" class="kpi-value">0</p>
+                <p class="kpi-note">Hợp đồng làm từ CTV</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="row mb-4 align-items-stretch">
+          <div class="col-lg-8">
+            <article class="card chart-card h-100">
+              <div class="card-header">Doanh thu 12 tháng</div>
+              <div class="card-body"><div class="chart-box"><canvas id="revenueLineChart"></canvas></div></div>
+            </article>
+          </div>
+          <div class="col-lg-4">
+            <article class="card chart-card h-100">
+              <div class="card-header">Tỷ lệ nguồn khách</div>
+              <div class="card-body"><div class="chart-box"><canvas id="sourcePieChart"></canvas></div></div>
+            </article>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-lg-6">
+            <article class="card chart-card h-100">
+              <div class="card-header">Nguồn cung và nguồn cầu theo nhóm</div>
+              <div class="card-body"><div class="chart-box"><canvas id="teamBarChart"></canvas></div></div>
+            </article>
+          </div>
+          <div class="col-lg-6">
+            <div class="row">
+              <div class="col-md-6">
+                <article class="card h-100">
+                  <div class="card-header">Top 5 cá nhân</div>
+                  <div class="table-responsive">
+                    <table class="data table table-sm rank-table">
+                      <thead>
+                        <tr>
+                          <th>Tên</th>
+                          <th class="text-nowrap" style="width: 1%;">Nhóm</th>
+                          <th class="text-nowrap text-end" style="width: 1%;">Số HĐ</th>
+                          <th class="text-nowrap text-end" style="width: 1%;">Tổng hoa hồng</th>
+                        </tr>
+                      </thead>
+                      <tbody id="rank-staff-body">
+                        <tr><td colspan="4">Đang tải...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              </div>
+              <div class="col-md-6">
+                <article class="card h-100">
+                  <div class="card-header">Nhóm thi đua</div>
+                  <div class="table-responsive">
+                    <table class="data table table-sm rank-table">
+                      <thead>
+                        <tr>
+                          <th>Tên nhóm</th>
+                          <th class="text-nowrap text-end" style="width: 1%;">Số HĐ</th>
+                          <th class="text-nowrap text-end" style="width: 1%;">Tổng hoa hồng</th>
+                        </tr>
+                      </thead>
+                      <tbody id="rank-group-body">
+                        <tr><td colspan="3">Đang tải...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/pending-posts.js?v=admin-only"></script>
+  <script src="assets/js/spa.js?v=sidebar-lock"></script>
+  <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
+  <script src="assets/js/users.js?v=staff-lock"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      document.getElementById("btnLogout").addEventListener("click", function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        localStorage.removeItem("user");
+        window.location.replace("index.html");
+      });
+    })();
+  </script>
+  <script data-reports>
+    (function () {
+      var root = document.getElementById("report-page");
+      if (!root || root.dataset.bound === "1") return;
+      root.dataset.bound = "1";
+
+      var API_ORIGIN = "http://localhost:8000";
+      var lineChart = null;
+      var pieChart = null;
+      var barChart = null;
+      var pieColors = ["#155cc0", "#8e0b2c", "#15803d", "#d97706", "#7c3aed", "#0f766e", "#be123c"];
+      var staffDirectory = [];
+
+      function formatMoney(amount) {
+        var value = Number(amount);
+        if (!isFinite(value)) value = 0;
+        return new Intl.NumberFormat("vi-VN").format(value) + " đ";
+      }
+
+      function formatPercent(amount) {
+        var value = Number(amount);
+        if (!isFinite(value)) value = 0;
+        return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value) + "%";
+      }
+
+      function cell(text, numeric) {
+        var item = document.createElement("td");
+        if (numeric === true) item.className = "num";
+        else if (numeric) item.className = numeric;
+        item.textContent = text == null ? "" : String(text);
+        return item;
+      }
+
+      function emptyRow(body, columns, message) {
+        body.replaceChildren();
+        var row = document.createElement("tr");
+        var item = document.createElement("td");
+        item.colSpan = columns;
+        item.textContent = message;
+        row.appendChild(item);
+        body.appendChild(row);
+      }
+
+      function fillSelects() {
+        var yearSelect = document.getElementById("report-year");
+        var monthSelect = document.getElementById("report-month");
+        var current = new Date().getFullYear();
+        yearSelect.replaceChildren();
+        for (var year = current; year >= current - 6; year -= 1) {
+          var option = document.createElement("option");
+          option.value = String(year);
+          option.textContent = String(year);
+          yearSelect.appendChild(option);
+        }
+        yearSelect.value = String(current);
+        for (var month = 1; month <= 12; month += 1) {
+          var monthOption = document.createElement("option");
+          monthOption.value = String(month);
+          monthOption.textContent = "Tháng " + month;
+          monthSelect.appendChild(monthOption);
+        }
+      }
+
+      function renderRanks(staffRows, groupRows) {
+        var staffBody = document.getElementById("rank-staff-body");
+        var groupBody = document.getElementById("rank-group-body");
+        if (!staffRows.length) emptyRow(staffBody, 4, "Chưa có dữ liệu.");
+        else {
+          staffBody.replaceChildren();
+          staffRows.forEach(function (row) {
+            var tr = document.createElement("tr");
+            tr.appendChild(cell(row.ten));
+            tr.appendChild(cell(row.nhom, "text-nowrap"));
+            tr.appendChild(cell(row.so_hop_dong, "text-nowrap text-end"));
+            tr.appendChild(cell(formatMoney(row.doanh_thu), "text-nowrap text-end"));
+            staffBody.appendChild(tr);
+          });
+        }
+        if (!groupRows.length) emptyRow(groupBody, 3, "Chưa có dữ liệu.");
+        else {
+          groupBody.replaceChildren();
+          groupRows.forEach(function (row) {
+            var tr = document.createElement("tr");
+            tr.appendChild(cell(row.ten_nhom));
+            tr.appendChild(cell(row.so_hop_dong, "text-nowrap text-end"));
+            tr.appendChild(cell(formatMoney(row.doanh_thu), "text-nowrap text-end"));
+            groupBody.appendChild(tr);
+          });
+        }
+      }
+
+      function roleKey(role) {
+        return String(role || "").trim().toLowerCase();
+      }
+
+      function seesCompany(role) {
+        var value = roleKey(role);
+        return value === "admin" || value === "giám đốc";
+      }
+
+      function seesViewToggle(role) {
+        var value = roleKey(role);
+        return value === "nhân viên" || value === "trưởng nhóm";
+      }
+
+      function selectedViewMode() {
+        var selected = document.querySelector('#viewModeToggle input[name="viewMode"]:checked');
+        return selected && selected.value === "group" ? "group" : "personal";
+      }
+
+      function authHeaders() {
+        return { Authorization: "Bearer " + (localStorage.getItem("accessToken") || "") };
+      }
+
+      function expireReportSession() {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_phone");
+        localStorage.removeItem("user");
+        window.location.replace("index.html");
+      }
+
+      function fillTeamOptions() {
+        var select = document.getElementById("filterTeam");
+        if (!select) return;
+        var current = select.value;
+        while (select.options.length > 1) select.remove(1);
+        var seen = {};
+        var names = [];
+        staffDirectory.forEach(function (user) {
+          var name = String((user && user.nhom) || "").trim();
+          var key = name.toLowerCase();
+          if (!name || seen[key]) return;
+          seen[key] = true;
+          names.push(name);
+        });
+        names.sort(function (left, right) { return left.localeCompare(right, "vi"); });
+        names.forEach(function (name) {
+          var option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          select.appendChild(option);
+        });
+        if (current && Array.prototype.some.call(select.options, function (option) { return option.value === current; })) {
+          select.value = current;
+        }
+      }
+
+      function fillEmployeeOptions() {
+        var select = document.getElementById("filterEmployee");
+        var teamSelect = document.getElementById("filterTeam");
+        if (!select || !teamSelect) return;
+        var team = teamSelect.value;
+        var current = select.value;
+        while (select.options.length > 1) select.remove(1);
+        staffDirectory.forEach(function (user) {
+          if (!user || user.id == null) return;
+          var group = String(user.nhom || "").trim();
+          if (team && group !== team) return;
+          var option = document.createElement("option");
+          option.value = String(user.id);
+          option.textContent = user.full_name || "Nhân viên";
+          select.appendChild(option);
+        });
+        var stillThere = Array.prototype.some.call(select.options, function (option) { return option.value === current; });
+        select.value = stillThere ? current : "";
+      }
+
+      function loadDirectory() {
+        return fetch(API_ORIGIN + "/api/users/list", { headers: authHeaders() }).then(function (response) {
+          if (response.status === 401) {
+            expireReportSession();
+            throw new Error("Phiên đăng nhập đã hết hạn.");
+          }
+          if (!response.ok) throw new Error("Không tải được danh sách nhân viên.");
+          return response.json();
+        }).then(function (users) {
+          staffDirectory = Array.isArray(users) ? users : [];
+          fillTeamOptions();
+          fillEmployeeOptions();
+        }).catch(function (error) {
+          var message = document.getElementById("report-message");
+          if (message && error && error.message && error.message.indexOf("hết hạn") === -1) {
+            message.textContent = error.message;
+          }
+        });
+      }
+
+      function drawCharts(charts) {
+        var lineValues = charts.doanh_thu_thang || [];
+        var labels = [];
+        for (var index = 1; index <= 12; index += 1) labels.push("T" + index);
+        if (lineChart) lineChart.destroy();
+        lineChart = new Chart(document.getElementById("revenueLineChart"), {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Doanh thu",
+              data: labels.map(function (_, itemIndex) { return Number(lineValues[itemIndex] || 0); }),
+              borderColor: "#155cc0",
+              backgroundColor: "rgba(21, 92, 192, 0.12)",
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        var slices = charts.ty_le_nguon || [];
+        if (!slices.length) slices = [{ nguon: "Không có dữ liệu", so_luong: 0 }];
+        if (pieChart) pieChart.destroy();
+        pieChart = new Chart(document.getElementById("sourcePieChart"), {
+          type: "pie",
+          data: {
+            labels: slices.map(function (item) { return item.nguon; }),
+            datasets: [{
+              data: slices.map(function (item) { return Number(item.so_luong || 0); }),
+              backgroundColor: slices.map(function (_, itemIndex) { return pieColors[itemIndex % pieColors.length]; })
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        var groups = charts.cung_cau_nhom || [];
+        if (!groups.length) groups = [{ nhom: "Chưa có nhóm", nguon_cung: 0, nguon_cau: 0 }];
+        if (barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById("teamBarChart"), {
+          type: "bar",
+          data: {
+            labels: groups.map(function (item) { return item.nhom; }),
+            datasets: [
+              { label: "Nguồn cung", data: groups.map(function (item) { return item.nguon_cung; }), backgroundColor: "#8e0b2c" },
+              { label: "Nguồn cầu", data: groups.map(function (item) { return item.nguon_cau; }), backgroundColor: "#155cc0" }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+
+      function applyReport(payload) {
+        var kpis = payload.kpis || {};
+        var huy = kpis.huy || {};
+        document.getElementById("kpi-doanh-thu").textContent = formatMoney(kpis.doanh_thu);
+        document.getElementById("kpi-thanh-cong").textContent = String(kpis.thanh_cong || 0);
+        document.getElementById("kpi-huy").textContent = String(huy.so_luong || 0);
+        document.getElementById("kpi-huy-rate").textContent = "Tỷ lệ rớt " + formatPercent(huy.ty_le);
+        document.getElementById("kpi-nguon").textContent = String(kpis.nguon_khach || 0);
+        var board = payload.leaderboard || {};
+        var company = seesCompany(payload.user_role);
+        var toggle = document.getElementById("viewModeToggle");
+        var groupBlock = document.getElementById("filterGroupBlock");
+        var employeeBlock = document.getElementById("filterEmployeeBlock");
+        if (groupBlock) groupBlock.style.display = company ? "flex" : "none";
+        if (employeeBlock) employeeBlock.style.display = company ? "flex" : "none";
+        if (toggle) toggle.style.display = seesViewToggle(payload.user_role) ? "inline-flex" : "none";
+        renderRanks(board.top_nhan_vien || [], board.top_nhom || []);
+        drawCharts(payload.charts || {});
+      }
+
+      function fetchReportData() {
+        var year = document.getElementById("report-year").value;
+        var month = document.getElementById("report-month").value;
+        var message = document.getElementById("report-message");
+        var params = ["year=" + encodeURIComponent(year), "view_mode=" + encodeURIComponent(selectedViewMode())];
+        var team = document.getElementById("filterTeam");
+        var employee = document.getElementById("filterEmployee");
+        if (month) params.push("month=" + encodeURIComponent(month));
+        if (team && team.value) params.push("nhom=" + encodeURIComponent(team.value));
+        if (employee && employee.value) params.push("nhan_vien_id=" + encodeURIComponent(employee.value));
+        if (message) message.textContent = "";
+        return fetch(API_ORIGIN + "/api/reports/dashboard?" + params.join("&"), {
+          headers: authHeaders()
+        }).then(function (response) {
+          if (response.status === 401) {
+            expireReportSession();
+            throw new Error("Phiên đăng nhập đã hết hạn.");
+          }
+          return response.json().then(function (data) {
+            if (!response.ok) throw new Error((data && data.detail) || "Không tải được báo cáo.");
+            return data;
+          });
+        }).then(applyReport).catch(function (error) {
+          if (message) message.textContent = error.message;
+        });
+      }
+
+      function bootReports() {
+        if (!document.getElementById("report-page")) return;
+        fillSelects();
+        var yearSelect = document.getElementById("report-year");
+        if (yearSelect && yearSelect.dataset.bound !== "1") {
+          yearSelect.dataset.bound = "1";
+          yearSelect.addEventListener("change", fetchReportData);
+        }
+        var monthSelect = document.getElementById("report-month");
+        if (monthSelect && monthSelect.dataset.bound !== "1") {
+          monthSelect.dataset.bound = "1";
+          monthSelect.addEventListener("change", fetchReportData);
+        }
+        var viewToggle = document.getElementById("viewModeToggle");
+        if (viewToggle && viewToggle.dataset.bound !== "1") {
+          viewToggle.dataset.bound = "1";
+          viewToggle.addEventListener("change", fetchReportData);
+        }
+        var teamSelect = document.getElementById("filterTeam");
+        if (teamSelect && teamSelect.dataset.bound !== "1") {
+          teamSelect.dataset.bound = "1";
+          teamSelect.addEventListener("change", function () {
+            fillEmployeeOptions();
+            fetchReportData();
+          });
+        }
+        var employeeSelect = document.getElementById("filterEmployee");
+        if (employeeSelect && employeeSelect.dataset.bound !== "1") {
+          employeeSelect.dataset.bound = "1";
+          employeeSelect.addEventListener("change", fetchReportData);
+        }
+        loadDirectory();
+        function start() { fetchReportData(); }
+        if (window.Chart) start();
+        else {
+          var loader = document.createElement("script");
+          loader.src = "https://cdn.jsdelivr.net/npm/chart.js";
+          loader.onload = start;
+          loader.onerror = function () {
+            var message = document.getElementById("report-message");
+            if (message) message.textContent = "Không tải được thư viện biểu đồ.";
+          };
+          document.head.appendChild(loader);
+        }
+      }
+
+      function ensureBootstrap() {
+        if (document.querySelector('link[rel="stylesheet"][href*="bootstrap"]')) return Promise.resolve();
+        return new Promise(function (resolve) {
+          var link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
+          link.onload = function () { resolve(); };
+          link.onerror = function () { resolve(); };
+          var styleCss = document.querySelector('link[href*="assets/css/style.css"]');
+          if (styleCss && styleCss.parentNode) styleCss.parentNode.insertBefore(link, styleCss);
+          else document.head.appendChild(link);
+        });
+      }
+
+      function beginReports() {
+        ensureBootstrap().then(function () {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(bootReports);
+          });
+        });
+      }
+
+      if (document.readyState === "complete") beginReports();
+      else window.addEventListener("load", beginReports);
+    })();
+  </script>
+</body>
+</html>
