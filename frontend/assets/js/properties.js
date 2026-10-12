@@ -805,10 +805,13 @@
     var submitButton = form.querySelector('button[type="submit"]');
     var contentField = form.querySelector("#property-content");
     var content = contentField ? contentField.value.trim() : "";
+    
+    // 1. CHẶN LỖI: Bắt buộc phải có chữ trong phần nội dung bài viết
     if (!content) {
       showNotice("Hãy dán nội dung bài viết.", "warning");
       return;
     }
+    
     var parsed;
     try {
       parsed = parsePropertyData(content);
@@ -823,37 +826,25 @@
     await checkDuplicateParcel();
     if (duplicateBlocked) return;
     
-    // --- KHÓA NÚT SUBMIT & BẮT ĐẦU UPLOAD LÊN CLOUDFLARE R2 ---
+    // --- 2. BẮT ĐẦU QUÁ TRÌNH UPLOAD ẢNH LÊN CLOUDFLARE R2 ---
     if (submitButton) {
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ảnh...';
     }
 
     let finalImageUrls = "";
+    console.log("Số lượng file chuẩn bị tải lên:", selectedMedia.length);
+
+    // Sử dụng trực tiếp biến selectedMedia của hệ thống
     if (selectedMedia && selectedMedia.length > 0) {
-        // Gọi hàm upload R2 anh vừa thêm
         finalImageUrls = await uploadToCloudflareR2(selectedMedia); 
-    }
-    
-    // --- KHÓA NÚT SUBMIT & BẮT ĐẦU UPLOAD LÊN CLOUDFLARE R2 ---
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ảnh...';
-    }
-
-    let finalImageUrls = "";
-    
-    // SỬA LẠI CHỖ NÀY: Dùng trực tiếp DOM lấy file từ input thay vì dựa vào biến trung gian
-    var uploadInput = document.getElementById("media_upload");
-    if (uploadInput && uploadInput.files && uploadInput.files.length > 0) {
-        // Đã có ảnh, gọi hàm upload
-        finalImageUrls = await uploadToCloudflareR2(uploadInput.files); 
+        console.log("Đã tải xong, link Cloudflare R2:", finalImageUrls);
     }
     
     if (submitButton) {
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang lưu bài viết...';
     }
-    // -------------------------------------------------------------
+    // -----------------------------------------------------------
 
     var sheetField = document.getElementById("property-so-to");
     var plotField = document.getElementById("property-so-thua");
@@ -868,7 +859,7 @@
     payload.append("so_thua", plotField ? plotField.value.trim() : "");
     payload.append("status", "Chưa bán");
     
-    // THAY ĐỔI QUAN TRỌNG: Gửi chuỗi link R2 thay vì gửi nguyên file vật lý
+    // Gửi chuỗi đường link Cloudflare R2 về Database thay vì gửi file vật lý
     if (finalImageUrls) {
         payload.append("r2_urls", finalImageUrls);
     }
@@ -879,22 +870,20 @@
         headers: { Authorization: "Bearer " + token },
         body: payload
       });
+      
       if (response.status === 401 || response.status === 403) {
         console.error("POST /api/properties bị từ chối:", response.status);
         expireSession();
         return;
       }
+      
       if (!response.ok) {
         var failBody = null;
-        try {
-          failBody = await response.json();
-        } catch (parseError) {
-          console.error("Không đọc được lỗi đăng tin:", parseError);
-        }
-        console.error("POST /api/properties thất bại:", response.status, failBody);
+        try { failBody = await response.json(); } catch (parseError) {}
         showNotice(readError(failBody), "error");
         return;
       }
+      
       var modal = document.getElementById("property-modal");
       if (modal) modal.classList.add("is-hidden");
       form.reset();
@@ -902,13 +891,14 @@
       setDuplicateState(false, "");
       showNotice("Đăng thành công", "success");
       await loadPropertyFeed();
+      
     } catch (error) {
       console.error("POST /api/properties lỗi:", error);
       showNotice("Không kết nối được máy chủ.", "error");
     } finally {
       if (submitButton) {
           submitButton.disabled = duplicateBlocked;
-          submitButton.innerHTML = 'Đăng tin'; // Trả lại text ban đầu
+          submitButton.innerHTML = 'Đăng tin';
       }
     }
   }
