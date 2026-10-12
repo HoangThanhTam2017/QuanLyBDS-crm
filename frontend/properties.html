@@ -386,11 +386,7 @@
           <label class="label" for="media_upload">Ảnh / video</label>
           <input type="file" id="media_upload" name="media_files" accept="image/*, video/*" multiple class="block w-full cursor-pointer rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#8e0b2c] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#720924]">
           <p class="mt-1 text-xs text-gray-500">Chọn nhiều ảnh và video trong cùng một lần. Nếu có nhiều video, hệ thống lấy video đầu tiên.</p>
-	<!-- BỔ SUNG 2 DÒNG NÀY -->
-  	<div id="uploadStatus" class="mt-2 text-sm font-semibold text-[#155cc0]"></div>
-  	<input type="hidden" id="r2_uploaded_urls" name="r2_uploaded_urls" value="">
-  	<!-- ==================== -->
-          <div id="media-preview" class="mt-3 grid grid-cols-3 gap-2"></div>
+	  <div id="media-preview" class="mt-3 grid grid-cols-3 gap-2"></div>
         </div>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" id="cancel-modal" class="btn btn-secondary">Hủy</button>
@@ -516,25 +512,5 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-  // CHỈ TẠO ẢNH XEM TRƯỚC TẠM THỜI (KHÔNG UPLOAD LÊN MẠNG)
-  document.getElementById('media_upload').addEventListener('change', function(e) {
-      const files = e.target.files;
-      const previewArea = document.getElementById('media-preview');
-      previewArea.innerHTML = ""; // Xóa ảnh xem trước cũ nếu nhân viên chọn lại
-      
-      if (files.length === 0) return;
-      
-      for (let i = 0; i < files.length; i++) {
-          // Tạo đường link ảo nội bộ trình duyệt
-          const tempUrl = URL.createObjectURL(files[i]); 
-          previewArea.innerHTML += `
-            <div class="relative rounded-lg border border-gray-200 p-1">
-                <img src="${tempUrl}" class="h-24 w-full object-cover rounded-md" alt="Preview">
-            </div>
-          `;
-      }
-  });
-</script>
 </body>
 </html>
