@@ -517,54 +517,23 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  document.getElementById('media_upload').addEventListener('change', async function(e) {
+  // CHỈ TẠO ẢNH XEM TRƯỚC TẠM THỜI (KHÔNG UPLOAD LÊN MẠNG)
+  document.getElementById('media_upload').addEventListener('change', function(e) {
       const files = e.target.files;
-      const statusDiv = document.getElementById('uploadStatus');
-      const hiddenInput = document.getElementById('r2_uploaded_urls');
       const previewArea = document.getElementById('media-preview');
-      const submitBtn = document.getElementById('submit-property');
+      previewArea.innerHTML = ""; // Xóa ảnh xem trước cũ nếu nhân viên chọn lại
       
       if (files.length === 0) return;
       
-      // Xóa hiển thị cũ và khóa nút đăng tin tránh lưu khi chưa upload xong
-      previewArea.innerHTML = "";
-      hiddenInput.value = "";
-      submitBtn.disabled = true; 
-      statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang đẩy ${files.length} ảnh lên hệ thống...`;
-      
-      const uploadedUrls = [];
-
       for (let i = 0; i < files.length; i++) {
-          const formData = new FormData();
-          formData.append("file", files[i]);
-          
-          try {
-              const response = await fetch("https://crm.nhadatthanhtam.com/api/upload-image", {
-                  method: "POST",
-                  body: formData
-              });
-              const data = await response.json();
-              
-              if (response.ok && data.success) {
-                  uploadedUrls.push(data.url);
-                  // Hiển thị ảnh xem trước ngay lập tức
-                  previewArea.innerHTML += `
-                    <div class="relative rounded-lg border border-gray-200 p-1">
-                        <img src="${data.url}" class="h-24 w-full object-cover rounded-md" alt="Ảnh BĐS">
-                    </div>
-                  `;
-              }
-          } catch (error) {
-              console.error("Lỗi upload file:", files[i].name, error);
-          }
+          // Tạo đường link ảo nội bộ trình duyệt
+          const tempUrl = URL.createObjectURL(files[i]); 
+          previewArea.innerHTML += `
+            <div class="relative rounded-lg border border-gray-200 p-1">
+                <img src="${tempUrl}" class="h-24 w-full object-cover rounded-md" alt="Preview">
+            </div>
+          `;
       }
-      
-      // Lưu toàn bộ link R2 (cách nhau bằng dấu phẩy) vào trường ẩn
-      hiddenInput.value = uploadedUrls.join(',');
-      
-      // Hoàn tất, mở lại nút đăng tin
-      statusDiv.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-check mr-1"></i> Tải thành công ${uploadedUrls.length}/${files.length} tệp!</span>`;
-      submitBtn.disabled = false;
   });
 </script>
 </body>

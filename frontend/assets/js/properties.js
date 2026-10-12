@@ -1,7 +1,14 @@
 (function () {
   "use strict";
 
-  var API_ORIGIN = "http://localhost:8000";
+ // Tự động lấy tên miền hiện tại (Bao gồm cả localhost hoặc tên miền thật)
+  var API_ORIGIN = window.location.origin;
+  
+  // Nếu Frontend và Backend chạy khác cổng trên localhost (vd Frontend 5500, Backend 8000), 
+  // anh có thể dùng đoạn if này để nắn lại. Nếu không, chỉ cần dòng var API_ORIGIN ở trên là đủ.
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      API_ORIGIN = "http://localhost:8000";
+  }
   var API_URL = API_ORIGIN + "/api/properties";
   var addressTimer = null;
   var feedRequest = 0;
@@ -815,8 +822,27 @@
     window.clearTimeout(duplicateTimer);
     await checkDuplicateParcel();
     if (duplicateBlocked) return;
+    
+    // --- KHÓA NÚT SUBMIT & BẮT ĐẦU UPLOAD LÊN CLOUDFLARE R2 ---
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ảnh...';
+    }
+
+    let finalImageUrls = "";
+    if (selectedMedia && selectedMedia.length > 0) {
+        // Gọi hàm upload R2 anh vừa thêm
+        finalImageUrls = await uploadToCloudflareR2(selectedMedia); 
+    }
+    
+    if (submitButton) {
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang lưu bài viết...';
+    }
+    // -------------------------------------------------------------
+
     var sheetField = document.getElementById("property-so-to");
     var plotField = document.getElementById("property-so-thua");
+    
     var payload = new FormData();
     payload.append("content", content);
     if (parsed.price != null) payload.append("price", String(parsed.price));
@@ -826,8 +852,12 @@
     payload.append("so_to", sheetField ? sheetField.value.trim() : "");
     payload.append("so_thua", plotField ? plotField.value.trim() : "");
     payload.append("status", "Chưa bán");
-    for (var i = 0; i < selectedMedia.length; i++) payload.append("media_files", selectedMedia[i]);
-    if (submitButton) submitButton.disabled = true;
+    
+    // THAY ĐỔI QUAN TRỌNG: Gửi chuỗi link R2 thay vì gửi nguyên file vật lý
+    if (finalImageUrls) {
+        payload.append("r2_urls", finalImageUrls);
+    }
+
     try {
       var response = await fetch(API_URL, {
         method: "POST",
@@ -861,7 +891,10 @@
       console.error("POST /api/properties lỗi:", error);
       showNotice("Không kết nối được máy chủ.", "error");
     } finally {
-      if (submitButton) submitButton.disabled = duplicateBlocked;
+      if (submitButton) {
+          submitButton.disabled = duplicateBlocked;
+          submitButton.innerHTML = 'Đăng tin'; // Trả lại text ban đầu
+      }
     }
   }
 
@@ -1156,7 +1189,28 @@
     if (modal) modal.classList.add("is-hidden");
     document.body.classList.remove("lightbox-lock");
   }
-
+// Hàm chuyên dụng để đẩy file lên R2 và trả về chuỗi các đường link
+async function uploadToCloudflareR2(files) {
+    let uploadedUrls = [];
+    for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
+        formData.append("file", files[i]);
+        try {
+            const response = await fetch(API_ORIGIN + "/api/upload-image", {
+                method: "POST",
+                body: formData
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                uploadedUrls.push(data.url);
+            }
+        } catch (error) {
+            console.error("Lỗi upload:", error);
+        }
+    }
+    // Trả về chuỗi chứa các link R2, cách nhau bằng dấu phẩy
+    return uploadedUrls.join(','); 
+}
   async function downloadLightboxImage(button) {
     var image = document.getElementById("lightbox-image");
     var src = image ? (image.currentSrc || image.src) : "";
@@ -1983,7 +2037,7 @@
     event.preventDefault();
     submitProperty(event.target);
   });
-
+	
   window.parsePropertyData = parsePropertyData;
   window.fillPropertyComposer = fillPropertyComposer;
   window.loadPropertyFeed = loadPropertyFeed;
