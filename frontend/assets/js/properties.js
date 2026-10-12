@@ -1195,22 +1195,36 @@
     document.body.classList.remove("lightbox-lock");
   }
 // Hàm chuyên dụng để đẩy file lên R2 và trả về chuỗi các đường link
+// Hàm chuyên dụng để đẩy file lên R2 và trả về chuỗi các đường link
 async function uploadToCloudflareR2(files) {
     let uploadedUrls = [];
+    
+    // 1. Lấy token đăng nhập của nhân viên
+    var token = localStorage.getItem("accessToken");
+    
     for (let i = 0; i < files.length; i++) {
         const formData = new FormData();
         formData.append("file", files[i]);
         try {
             const response = await fetch(API_ORIGIN + "/api/upload-image", {
                 method: "POST",
+                headers: {
+                    // 2. Chèn Token vào để qua cửa bảo mật FastAPI
+                    Authorization: "Bearer " + token 
+                },
                 body: formData
             });
+            
             const data = await response.json();
+            
             if (response.ok && data.success) {
                 uploadedUrls.push(data.url);
+            } else {
+                // 3. Báo lỗi đỏ ra Console nếu Server từ chối
+                console.error("Lỗi từ server khi upload ảnh:", data); 
             }
         } catch (error) {
-            console.error("Lỗi upload:", error);
+            console.error("Lỗi kết nối khi upload ảnh:", error);
         }
     }
     // Trả về chuỗi chứa các link R2, cách nhau bằng dấu phẩy
