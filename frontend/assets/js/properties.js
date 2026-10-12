@@ -835,6 +835,21 @@
         finalImageUrls = await uploadToCloudflareR2(selectedMedia); 
     }
     
+    // --- KHÓA NÚT SUBMIT & BẮT ĐẦU UPLOAD LÊN CLOUDFLARE R2 ---
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ảnh...';
+    }
+
+    let finalImageUrls = "";
+    
+    // SỬA LẠI CHỖ NÀY: Dùng trực tiếp DOM lấy file từ input thay vì dựa vào biến trung gian
+    var uploadInput = document.getElementById("media_upload");
+    if (uploadInput && uploadInput.files && uploadInput.files.length > 0) {
+        // Đã có ảnh, gọi hàm upload
+        finalImageUrls = await uploadToCloudflareR2(uploadInput.files); 
+    }
+    
     if (submitButton) {
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang lưu bài viết...';
     }
