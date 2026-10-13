@@ -120,7 +120,7 @@
     var amount = parseViAmount(match[1]);
     if (amount == null) return null;
     var unit = (match[2] || "").toLowerCase();
-    if (unit === "tỷ" || unit === "ty") return Math.round(amount * 1000000000);
+    if (unit === "tỷ" || unit === "ty"|| unit === "tỉ"|| unit === "ti") return Math.round(amount * 1000000000);
     if (unit === "triệu" || unit === "trieu") return Math.round(amount * 1000000);
     return Math.round(amount);
   }
