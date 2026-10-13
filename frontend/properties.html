@@ -513,5 +513,39 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+  document.getElementById('submit-property').addEventListener('click', function() {
+      const soThua = document.getElementById('property-so-thua').value || "Chưa nhập";
+      const soTo = document.getElementById('property-so-to').value || "Chưa nhập";
+      const noiDung = document.getElementById('property-content').value || "";
+      const staffName = localStorage.getItem("user_name") || "Nhân viên (Chưa rõ)";
+
+      const mediaInput = document.getElementById('media_upload');
+      let thongTinAnh = "Không đính kèm file";
+      if (mediaInput && mediaInput.files && mediaInput.files.length > 0) {
+          thongTinAnh = `Có đính kèm ${mediaInput.files.length} file (ảnh/video)`;
+      }
+
+      const payload = {
+          title: `Tờ bản đồ số ${soTo} - Thửa đất số ${soThua}`,
+          price: "Xem chi tiết trong nội dung bài viết", 
+          location: "Thành Tâm Hà Tĩnh",
+          staff_name: staffName,
+          content: noiDung,
+          image_url: thongTinAnh,
+          timestamp: new Date().toLocaleString('vi-VN')
+      };
+
+      const makeWebhookUrl = 'https://hook.eu1.make.com/mx5zntqf678lbvx31gyzo52iv3l1exbb';
+      
+      fetch(makeWebhookUrl, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+      }).catch(() => {});
+  });
+</script>
 </body>
 </html>
