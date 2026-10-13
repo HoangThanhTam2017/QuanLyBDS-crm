@@ -805,13 +805,10 @@
     var submitButton = form.querySelector('button[type="submit"]');
     var contentField = form.querySelector("#property-content");
     var content = contentField ? contentField.value.trim() : "";
-    
-    // 1. CHẶN LỖI: Bắt buộc phải có chữ trong phần nội dung bài viết
     if (!content) {
       showNotice("Hãy dán nội dung bài viết.", "warning");
       return;
     }
-    
     var parsed;
     try {
       parsed = parsePropertyData(content);
@@ -825,30 +822,9 @@
     window.clearTimeout(duplicateTimer);
     await checkDuplicateParcel();
     if (duplicateBlocked) return;
-    
-    // --- 2. BẮT ĐẦU QUÁ TRÌNH UPLOAD ẢNH LÊN CLOUDFLARE R2 ---
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ảnh...';
-    }
-
-    let finalImageUrls = "";
-    console.log("Số lượng file chuẩn bị tải lên:", selectedMedia.length);
-
-    // Sử dụng trực tiếp biến selectedMedia của hệ thống
-    if (selectedMedia && selectedMedia.length > 0) {
-        finalImageUrls = await uploadToCloudflareR2(selectedMedia); 
-        console.log("Đã tải xong, link Cloudflare R2:", finalImageUrls);
-    }
-    
-    if (submitButton) {
-        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang lưu bài viết...';
-    }
-    // -----------------------------------------------------------
 
     var sheetField = document.getElementById("property-so-to");
     var plotField = document.getElementById("property-so-thua");
-    
     var payload = new FormData();
     payload.append("content", content);
     if (parsed.price != null) payload.append("price", String(parsed.price));
@@ -858,48 +834,52 @@
     payload.append("so_to", sheetField ? sheetField.value.trim() : "");
     payload.append("so_thua", plotField ? plotField.value.trim() : "");
     payload.append("status", "Chưa bán");
-    
-    // Gửi chuỗi đường link Cloudflare R2 về Database thay vì gửi file vật lý
-    if (finalImageUrls) {
-        payload.append("r2_urls", finalImageUrls);
-    }
 
+    // 👇 VỊ TRÍ ĐẶT ĐOẠN LẤY LINK R2 LÀ Ở ĐÂY 👇
+    var r2Input = document.getElementById("r2_uploaded_urls");
+    if (r2Input && r2Input.value) {
+      payload.append("r2_urls", r2Input.value);
+    } else {
+      for (var i = 0; i < selectedMedia.length; i++) payload.append("media_files", selectedMedia[i]);
+    }
+    // 👆 KẾT THÚC ĐOẠN LẤY LINK R2 👆
+
+    if (submitButton) submitButton.disabled = true;
     try {
       var response = await fetch(API_URL, {
         method: "POST",
         headers: { Authorization: "Bearer " + token },
         body: payload
       });
-      
       if (response.status === 401 || response.status === 403) {
         console.error("POST /api/properties bị từ chối:", response.status);
         expireSession();
         return;
       }
-      
       if (!response.ok) {
         var failBody = null;
-        try { failBody = await response.json(); } catch (parseError) {}
+        try {
+          failBody = await response.json();
+        } catch (parseError) {
+          console.error("Không đọc được lỗi đăng tin:", parseError);
+        }
+        console.error("POST /api/properties thất bại:", response.status, failBody);
         showNotice(readError(failBody), "error");
         return;
       }
-      
       var modal = document.getElementById("property-modal");
       if (modal) modal.classList.add("is-hidden");
       form.reset();
+      if (r2Input) r2Input.value = ""; // Xóa link cũ sau khi đăng xong
       clearMediaPreview();
       setDuplicateState(false, "");
       showNotice("Đăng thành công", "success");
       await loadPropertyFeed();
-      
     } catch (error) {
       console.error("POST /api/properties lỗi:", error);
       showNotice("Không kết nối được máy chủ.", "error");
     } finally {
-      if (submitButton) {
-          submitButton.disabled = duplicateBlocked;
-          submitButton.innerHTML = 'Đăng tin';
-      }
+      if (submitButton) submitButton.disabled = duplicateBlocked;
     }
   }
 
