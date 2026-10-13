@@ -512,5 +512,65 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Bắt sự kiện BẤM ĐĂNG TIN (chạy ưu tiên trước khi lưu bài)
+  document.getElementById('property-form').addEventListener('submit', async function(e) {
+      const fileInput = document.getElementById('media_upload');
+      const statusDiv = document.getElementById('uploadStatus');
+      const hiddenInput = document.getElementById('r2_uploaded_urls');
+      
+      // Nếu không có ảnh nào hoặc ảnh đã được tải lên R2 rồi thì cho qua để lưu bài bình thường
+      if (!fileInput || fileInput.files.length === 0 || fileInput.dataset.r2Uploaded === "true") {
+          fileInput.dataset.r2Uploaded = "false"; // Reset cho lần đăng sau
+          return;
+      }
+
+      // Chặn tạm thời việc gửi form để chờ tải ảnh lên R2 trước
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const files = fileInput.files;
+      const submitBtn = document.getElementById('submit-property');
+      
+      submitBtn.disabled = true;
+      if (statusDiv) {
+          statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang đẩy ${files.length} ảnh lên hệ thống...`;
+      }
+
+      const uploadedUrls = [];
+
+      for (let i = 0; i < files.length; i++) {
+          const formData = new FormData();
+          formData.append("file", files[i]);
+          
+          try {
+              const response = await fetch("https://crm.nhadatthanhtam.com/api/upload-image", {
+                  method: "POST",
+                  body: formData
+              });
+              const data = await response.json();
+              
+              if (response.ok && data.success) {
+                  uploadedUrls.push(data.url);
+                  // ĐÃ BỎ ĐOẠN previewArea.innerHTML ĐỂ KHÔNG BỊ NHÂN ĐÔI 6 ẢNH
+              }
+          } catch (error) {
+              console.error("Lỗi upload file:", files[i].name, error);
+          }
+      }
+
+      if (hiddenInput) {
+          hiddenInput.value = uploadedUrls.join(',');
+      }
+      if (statusDiv) {
+          statusDiv.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-check mr-1"></i> Tải thành công ${uploadedUrls.length}/${files.length} tệp!</span>`;
+      }
+
+      // Đánh dấu đã tải xong ảnh lên R2 và tự động bấm nút Đăng tin tiếp để lưu Database
+      fileInput.dataset.r2Uploaded = "true";
+      submitBtn.disabled = false;
+      document.getElementById('property-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }, true); // Chữ "true" ở đây giúp code này chạy TRƯỚC file properties.js
+</script>
 </body>
 </html>
