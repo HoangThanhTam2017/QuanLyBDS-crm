@@ -494,7 +494,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="assets/js/properties.js?v=lightbox-fb"></script>
+  <script src="assets/js/properties.js?v=v=r2-clean"></script>
   <script src="assets/js/pending-posts.js?v=admin-only"></script>
   <script src="assets/js/spa.js?v=sidebar-lock"></script>
   <script src="assets/js/topbar.js?v=sidebar-mobile"></script>
@@ -513,64 +513,82 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  // Bắt sự kiện BẤM ĐĂNG TIN (chạy ưu tiên trước khi lưu bài)
-  document.getElementById('property-form').addEventListener('submit', async function(e) {
-      const fileInput = document.getElementById('media_upload');
+  (function () {
+    const form = document.getElementById('property-form');
+    const fileInput = document.getElementById('media_upload');
+    if (!form || !fileInput) return;
+
+    // 1. Khi chọn lại ảnh mới -> xóa thông báo cũ (Việc hiển thị ảnh có nút X đã do properties.js tự làm)
+    fileInput.addEventListener('change', function () {
       const statusDiv = document.getElementById('uploadStatus');
-      const hiddenInput = document.getElementById('r2_uploaded_urls');
-      
-      // Nếu không có ảnh nào hoặc ảnh đã được tải lên R2 rồi thì cho qua để lưu bài bình thường
-      if (!fileInput || fileInput.files.length === 0 || fileInput.dataset.r2Uploaded === "true") {
-          fileInput.dataset.r2Uploaded = "false"; // Reset cho lần đăng sau
-          return;
+      if (statusDiv) statusDiv.innerHTML = "";
+    });
+
+    // 2. Chặn ở nút "Đăng tin": Bấm Đăng tin mới bắt đầu đẩy ảnh lên Cloudflare R2
+    form.addEventListener('submit', async function (e) {
+      // Nếu đã upload xong ở bước dưới và kích hoạt lại submit thì cho đi tiếp
+      if (form.dataset.r2Done === "1") {
+        form.dataset.r2Done = "";
+        return;
       }
 
-      // Chặn tạm thời việc gửi form để chờ tải ảnh lên R2 trước
+      const files = fileInput.files;
+      if (!files || files.length === 0) return; // Không có ảnh thì đăng tin bình thường
+
+      // Kiểm tra nếu chưa nhập nội dung thì nhường cho properties.js báo lỗi, chưa upload vội
+      const contentField = document.getElementById('property-content');
+      if (!contentField || !contentField.value.trim()) return;
+
+      // Dừng việc gửi form lại để chờ upload R2 trước
       e.preventDefault();
       e.stopImmediatePropagation();
 
-      const files = fileInput.files;
+      const statusDiv = document.getElementById('uploadStatus');
+      const hiddenInput = document.getElementById('r2_uploaded_urls');
       const submitBtn = document.getElementById('submit-property');
-      
-      submitBtn.disabled = true;
+
+      if (submitBtn) submitBtn.disabled = true;
       if (statusDiv) {
-          statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang đẩy ${files.length} ảnh lên hệ thống...`;
+        statusDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang tải ${files.length} tệp lên Cloudflare R2...`;
       }
 
       const uploadedUrls = [];
+      const token = localStorage.getItem("accessToken") || "";
 
       for (let i = 0; i < files.length; i++) {
-          const formData = new FormData();
-          formData.append("file", files[i]);
-          
-          try {
-              const response = await fetch("https://crm.nhadatthanhtam.com/api/upload-image", {
-                  method: "POST",
-                  body: formData
-              });
-              const data = await response.json();
-              
-              if (response.ok && data.success) {
-                  uploadedUrls.push(data.url);
-                  // ĐÃ BỎ ĐOẠN previewArea.innerHTML ĐỂ KHÔNG BỊ NHÂN ĐÔI 6 ẢNH
-              }
-          } catch (error) {
-              console.error("Lỗi upload file:", files[i].name, error);
+        const formData = new FormData();
+        formData.append("file", files[i]);
+
+        try {
+          const response = await fetch("https://crm.nhadatthanhtam.com/api/upload-image", {
+            method: "POST",
+            headers: token ? { "Authorization": "Bearer " + token } : {},
+            body: formData
+          });
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            uploadedUrls.push(data.url);
+            // TUYỆT ĐỐI KHÔNG DÙNG previewArea.innerHTML Ở ĐÂY ĐỂ TRÁNH NHÂN ĐÔI ẢNH
           }
+        } catch (error) {
+          console.error("Lỗi upload file:", files[i].name, error);
+        }
       }
 
       if (hiddenInput) {
-          hiddenInput.value = uploadedUrls.join(',');
+        hiddenInput.value = uploadedUrls.join(',');
       }
       if (statusDiv) {
-          statusDiv.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-check mr-1"></i> Tải thành công ${uploadedUrls.length}/${files.length} tệp!</span>`;
+        statusDiv.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-check mr-1"></i> Tải thành công ${uploadedUrls.length}/${files.length} tệp!</span>`;
       }
 
-      // Đánh dấu đã tải xong ảnh lên R2 và tự động bấm nút Đăng tin tiếp để lưu Database
-      fileInput.dataset.r2Uploaded = "true";
-      submitBtn.disabled = false;
-      document.getElementById('property-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-  }, true); // Chữ "true" ở đây giúp code này chạy TRƯỚC file properties.js
+      // Mở khóa nút và tự động kích hoạt lưu bài viết vào Database
+      if (submitBtn) submitBtn.disabled = false;
+      form.dataset.r2Done = "1";
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }, true); // Tham số "true" đảm bảo đoạn này luôn chạy trước properties.js
+  })();
 </script>
 </body>
 </html>
