@@ -236,7 +236,7 @@
     var text = String(value == null ? "" : value).trim();
     if (!text) return "";
     var amount = NaN;
-    var tyMatch = text.match(/([\d][\d.,]*)\s*tỷ/i);
+    var tyMatch = text.match(/([\d][\d.,]*)\s*(tỷ|tỉ|ty|ti)/i);
     if (tyMatch) {
       var raw = tyMatch[1];
       if (raw.indexOf(",") !== -1) {
