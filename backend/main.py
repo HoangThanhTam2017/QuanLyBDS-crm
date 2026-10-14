@@ -2499,7 +2499,7 @@ def approve_post(
         path = pending_image_path(raw)
         if path:
             original_by_path[path] = raw
-    public_domain = "https://ream-maximize-curler.ngrok-free.dev"
+    public_domain = "crm.nhadatthanhtam.com"
     images = []
     for path in kept:
         original_url = original_by_path.get(path, path)

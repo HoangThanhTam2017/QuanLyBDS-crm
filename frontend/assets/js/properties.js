@@ -115,7 +115,7 @@
 
   function parsePriceToVnd(fragment) {
     var text = String(fragment || "").toLowerCase();
-    var match = text.match(/(\d[\d.,]*)\s*(tỷ|ty|triệu|trieu)?/i);
+    var match = text.match(/(\d[\d.,]*)\s*(tỷ|ty|tỉ|ti|triệu|trieu)?/i);
     if (!match) return null;
     var amount = parseViAmount(match[1]);
     if (amount == null) return null;
